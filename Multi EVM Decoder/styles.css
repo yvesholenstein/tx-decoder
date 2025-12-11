@@ -809,6 +809,15 @@ body.dark-mode .tooltip-text::after {
     color: #fff;
 }
 
+.impact-change-highlight {
+    color: #b20b12;
+    font-weight: 700;
+}
+
+body.dark-mode .impact-change-highlight {
+    color: #ffb3b7;
+}
+
 .value-label-row {
     display: flex;
     align-items: center;

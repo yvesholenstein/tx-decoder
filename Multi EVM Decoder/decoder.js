@@ -441,11 +441,13 @@ async function buildAssetImpact(decoded, options) {
     for (const impact of impacts) {
         if (impact.type === 'native') {
             const symbol = impact.symbol;
+            const deltaAbs = impact.delta.abs();
+            const changeLine = `Change: -${formatWithCommas(ethers.utils.formatEther(deltaAbs))} ${symbol}`;
             rows.push({
                 title: `Native Outflow (${symbol})`,
                 details: [
                     `Before: ${formatWithCommas(ethers.utils.formatEther(impact.before))} ${symbol}`,
-                    `Change: -${formatWithCommas(ethers.utils.formatEther(impact.delta.abs()))} ${symbol}`,
+                    deltaAbs.isZero() ? changeLine : `<span class="impact-change-highlight">${changeLine}</span>`,
                     `After: ${formatWithCommas(ethers.utils.formatEther(impact.after))} ${symbol}`
                 ]
             });
@@ -456,12 +458,13 @@ async function buildAssetImpact(decoded, options) {
             const before = await getErc20Balance(provider, impact.token, owner);
             const delta = impact.amount.mul(-1);
             const after = before ? before.add(delta) : null;
+            const changeLine = `Change: -${formatWithCommas(ethers.utils.formatUnits(impact.amount, decimals))} ${symbol}`;
             rows.push({
                 title: `Token Outflow (${symbol})`,
                 details: [
                     `Token: ${impact.token}`,
                     `Before: ${before ? formatWithCommas(ethers.utils.formatUnits(before, decimals)) : 'N/A'} ${symbol}`,
-                    `Change: -${formatWithCommas(ethers.utils.formatUnits(impact.amount, decimals))} ${symbol}`,
+                    impact.amount.isZero() ? changeLine : `<span class="impact-change-highlight">${changeLine}</span>`,
                     `After: ${after ? formatWithCommas(ethers.utils.formatUnits(after, decimals)) : 'N/A'} ${symbol}`
                 ]
             });
@@ -2944,6 +2947,8 @@ async function decodeManual() {
             }
             if (decodedProxy) {
                 decodedProxy.proxyWarning = `Detected ${proxyInfo.proxyType.toUpperCase()} proxy. Decoded via implementation ${proxyInfo.implementation}.`;
+                decodedProxy.implementationAddress = proxyInfo.implementation;
+                decodedProxy.proxyContractAddress = contractAddress;
                 attachTransactionHash(decodedProxy, txMeta, txData);
                 updateDecodeStatus('Decoded via proxy implementation ABI.', 'success');
                 await displayDecoded(decodedProxy, simulationOptions);
@@ -3060,6 +3065,14 @@ async function displayDecoded(decoded, options = {}) {
             description: `Calling <strong>${decoded.functionName}</strong> on ${targetLabel} (decoded via implementation${decoded.proxyWarning ? ' after proxy detection' : ''}).`,
             hint: decoded.proxyWarning ? decoded.proxyWarning : ''
         };
+    }
+
+    // If proxy detected, include proxy→implementation note in the hint
+    if (decoded.proxyWarning) {
+        const proxyLabel = formatAddressWithName(decoded.contractAddress || decoded.proxyContractAddress || '');
+        const implLabel = decoded.implementationAddress ? decoded.implementationAddress : 'implementation contract';
+        const proxyNote = `Proxy call: ${proxyLabel} forwarding to ${implLabel} (decoded on implementation ABI).`;
+        finalSummary.hint = finalSummary.hint ? `${finalSummary.hint}<br>${proxyNote}` : proxyNote;
     }
 
     if (finalSummary) {
