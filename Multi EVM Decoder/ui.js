@@ -31,6 +31,7 @@ function loadApiKey() {
     document.getElementById('format-amounts').checked = settings.formatAmounts;
     document.getElementById('show-usd').checked = settings.showUSD;
     updateCustomRpcInput();
+    updateApiKeyWarning();
 }
 
 // Save settings
@@ -55,6 +56,7 @@ function saveApiKey(apiKey) {
     localStorage.setItem('etherscanApiKey', apiKey);
     document.getElementById('api-key-status').textContent = '✓ Etherscan API key saved (works for all chains)';
     document.getElementById('api-key-status').style.color = '#28a745';
+    updateApiKeyWarning();
 }
 
 // Open settings modal
@@ -106,6 +108,14 @@ function onChainChange() {
 // Update explorer hint text
 function updateExplorerHint() {
     document.getElementById('explorer-hint').textContent = 'Etherscan API key - works for all supported chains - saved locally';
+}
+
+function updateApiKeyWarning() {
+    const bannerAuto = document.getElementById('api-key-warning-auto');
+    const bannerManual = document.getElementById('api-key-warning-manual');
+    const hasKey = !!(localStorage.getItem('etherscanApiKey') || '').trim();
+    if (bannerAuto) bannerAuto.style.display = hasKey ? 'none' : 'block';
+    if (bannerManual) bannerManual.style.display = hasKey ? 'none' : 'block';
 }
 
 // Show error message
@@ -177,7 +187,7 @@ function renderAddressBook() {
             <strong>${data.label}</strong><br>
             <span style="font-size:0.8em; color:#888;">${addr}</span>
         </div>
-        <button class="remove-btn" onclick="handleRemoveAddress('${addr}')">×</button>
+        <button class="remove-btn" onclick="handleRemoveAddress('${addr}')">Ç-</button>
     </div>
 `).join('');
 }

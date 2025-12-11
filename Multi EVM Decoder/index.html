@@ -43,18 +43,22 @@
             <div class="chain-selector">
                 <label for="chain-select">Select Blockchain:</label>
                 <select id="chain-select" onchange="onChainChange()">
-                    <option value="ethereum">Ethereum Mainnet</option>
-                    <option value="arbitrum">Arbitrum One</option>
-                    <option value="optimism">Optimism</option>
-                    <option value="base">Base</option>
-                    <option value="polygon">Polygon</option>
-                    <option value="avalanche">Avalanche C-Chain</option>
-                    <option value="bsc">BNB Smart Chain</option>
-                    <option value="blast">Blast</option>
-                    <option value="energywebchain">Energy Web Chain</option>
-                    <option value="scroll">Scroll</option>
-                    <option value="taiko">Taiko</option>
-                    <option value="zksync">zkSync Era</option>
+                    <optgroup label="Main Chains">
+                        <option value="ethereum">Ethereum Mainnet</option>
+                        <option value="arbitrum">Arbitrum One</option>
+                        <option value="avalanche">Avalanche C-Chain</option>
+                        <option value="base">Base</option>
+                        <option value="bsc">BNB Smart Chain</option>
+                        <option value="optimism">Optimism</option>
+                        <option value="polygon">Polygon</option>
+                    </optgroup>
+                    <optgroup label="Other Chains">
+                        <option value="blast">Blast</option>
+                        <option value="energywebchain">Energy Web Chain</option>
+                        <option value="scroll">Scroll</option>
+                        <option value="taiko">Taiko</option>
+                        <option value="zksync">zkSync Era</option>
+                    </optgroup>
                 </select>
             </div>
 
@@ -64,6 +68,9 @@
             </div>
 
             <div id="manual-mode" class="input-section">
+                <div id="api-key-warning-manual" class="status-banner warning" style="display: none;">
+                    No Etherscan API key set. Add one in Settings to enable explorer-based decoding.
+                </div>
                 <div class="form-group">
                     <label>Transaction Data (Hex)</label>
                     <textarea id="manual-tx-data" placeholder="0x095ea7b3000000000000000000000000..."></textarea>
@@ -148,12 +155,8 @@
             </div>
 
             <div id="auto-mode" class="input-section active">
-                <div class="form-group">
-                    <label>Etherscan API Key (v2)</label>
-                    <input type="text" id="api-key" placeholder="Your Etherscan API key">
-                    <div class="small-text" id="explorer-hint">One API key works for all supported chains - saved
-                        locally</div>
-                    <div id="api-key-status"></div>
+                <div id="api-key-warning-auto" class="status-banner warning" style="display: none;">
+                    No Etherscan API key set. Add one in Settings to enable explorer-based decoding.
                 </div>
                 <div class="form-group">
                     <label>Contract Address</label>
@@ -274,6 +277,14 @@
                 <div class="small-text">Leave blank to use the default RPC endpoint shipped with the decoder.</div>
             </div>
             <div class="settings-group">
+                <h3>Etherscan API Key</h3>
+                <label for="api-key">Etherscan API Key (v2)</label>
+                <input type="text" id="api-key" placeholder="Your Etherscan API key">
+                <div class="small-text" id="explorer-hint">One API key works for all supported chains - saved locally</div>
+                <div id="api-key-status"></div>
+                <button class="decode-btn" style="margin-top:10px;" onclick="saveApiKey(document.getElementById('api-key').value.trim())">Save API Key</button>
+            </div>
+            <div class="settings-group">
                 <h3>Address Book</h3>
                 <div class="address-book-container">
                     <div class="address-book-list" id="address-book-list">
@@ -289,7 +300,7 @@
             </div>
             <div class="settings-group">
                 <div style="padding: 15px; background: #f8f9fa; border-radius: 10px; font-size: 0.9em; color: #666;">
-                    <p style="margin: 0;">Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, BSC, Blast, Scroll,
+                    <p style="margin: 0;">Ethereum, Arbitrum, Avalanche, Base, BSC, Energy Web Chain, Optimism, Polygon, Blast, Scroll,
                         zkSync Era</p>
                 </div>
             </div>

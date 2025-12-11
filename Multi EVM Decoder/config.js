@@ -20,13 +20,13 @@ const CHAIN_CONFIG = {
         proxyApiUrl: 'https://api.arbiscan.io/api',
         nativeCurrency: { symbol: 'ETH', decimals: 18 }
     },
-    optimism: {
-        name: 'Optimism',
-        chainId: 10,
-        explorerUrl: 'https://optimistic.etherscan.io',
-        rpcUrl: 'https://mainnet.optimism.io',
-        proxyApiUrl: 'https://api-optimistic.etherscan.io/api',
-        nativeCurrency: { symbol: 'ETH', decimals: 18 }
+    avalanche: {
+        name: 'Avalanche C-Chain',
+        chainId: 43114,
+        explorerUrl: 'https://snowtrace.io',
+        rpcUrl: 'https://api.avax.network/ext/bc/C/rpc',
+        proxyApiUrl: 'https://api.snowtrace.io/api',
+        nativeCurrency: { symbol: 'AVAX', decimals: 18 }
     },
     base: {
         name: 'Base',
@@ -36,22 +36,6 @@ const CHAIN_CONFIG = {
         proxyApiUrl: 'https://api.basescan.org/api',
         nativeCurrency: { symbol: 'ETH', decimals: 18 }
     },
-    polygon: {
-        name: 'Polygon',
-        chainId: 137,
-        explorerUrl: 'https://polygonscan.com',
-        rpcUrl: 'https://polygon-rpc.com',
-        proxyApiUrl: 'https://api.polygonscan.com/api',
-        nativeCurrency: { symbol: 'MATIC', decimals: 18 }
-    },
-    avalanche: {
-        name: 'Avalanche C-Chain',
-        chainId: 43114,
-        explorerUrl: 'https://snowtrace.io',
-        rpcUrl: 'https://api.avax.network/ext/bc/C/rpc',
-        proxyApiUrl: 'https://api.snowtrace.io/api',
-        nativeCurrency: { symbol: 'AVAX', decimals: 18 }
-    },
     bsc: {
         name: 'BNB Smart Chain',
         chainId: 56,
@@ -59,6 +43,22 @@ const CHAIN_CONFIG = {
         rpcUrl: 'https://bsc-dataseed.binance.org',
         proxyApiUrl: 'https://api.bscscan.com/api',
         nativeCurrency: { symbol: 'BNB', decimals: 18 }
+    },
+    optimism: {
+        name: 'Optimism',
+        chainId: 10,
+        explorerUrl: 'https://optimistic.etherscan.io',
+        rpcUrl: 'https://mainnet.optimism.io',
+        proxyApiUrl: 'https://api-optimistic.etherscan.io/api',
+        nativeCurrency: { symbol: 'ETH', decimals: 18 }
+    },
+    polygon: {
+        name: 'Polygon',
+        chainId: 137,
+        explorerUrl: 'https://polygonscan.com',
+        rpcUrl: 'https://polygon-rpc.com',
+        proxyApiUrl: 'https://api.polygonscan.com/api',
+        nativeCurrency: { symbol: 'MATIC', decimals: 18 }
     },
     blast: {
         name: 'Blast',
