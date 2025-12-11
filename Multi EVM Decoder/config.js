@@ -220,6 +220,46 @@ const TOKEN_DATABASE = {
     }
 };
 
+// Known contracts per chain (lowercased addresses)
+const KNOWN_CONTRACTS = {
+    ethereum: {
+        '0x7a250d5630b4cf539739df2c5dacb4c659f2488d': { name: 'Uniswap V2 Router', category: 'dex/router', source: 'builtin' },
+        '0xe592427a0aece92de3edee1f18e0157c05861564': { name: 'Uniswap V3 SwapRouter', category: 'dex/router', source: 'builtin' },
+        '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' },
+        '0x1111111254eeb25477b68fb85ed929f73a960582': { name: '1inch Aggregation Router v5', category: 'dex/router', source: 'builtin' },
+        '0xdef1c0ded9bec7f1a1670819833240f027b25eff': { name: '0x Exchange Proxy', category: 'dex/router', source: 'builtin' },
+        '0x25ace71c97b33cc4729cf772ae268934f7ab5fa1': { name: 'Optimism L1 Standard Bridge', category: 'bridge', source: 'builtin' },
+        '0xa0c68c638235ee32657e8f720a23cec1bfc77c77': { name: 'Polygon PoS RootChainManager (L1 Bridge)', category: 'bridge', source: 'builtin' },
+        '0x8d3e809fbd258083a5ba004a527159da535c8aba': { name: 'Base L1 Standard Bridge', category: 'bridge', source: 'builtin' },
+        '0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f': { name: 'Arbitrum Delayed Inbox (L1 Forwarder)', category: 'bridge', source: 'builtin' },
+        '0xcee284f754e854890e311e3280b767f80797180d': { name: 'Arbitrum L1 Gateway Router (ERC20 Bridge)', category: 'bridge', source: 'builtin' }
+    },
+    arbitrum: {
+        '0x1111111254760f7ab3f16433eea9304126dcf199': { name: '1inch Aggregation Router v5 (Arbitrum)', category: 'dex/router', source: 'builtin' },
+        '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' },
+        '0xdef171fe48cf0115b1d80b88dc8eab59176fee57': { name: 'Paraswap Augustus v5', category: 'dex/router', source: 'builtin' },
+        '0x794a61358d6845594f94dc1db02a252b5b4814ad': { name: 'Aave V3 Pool', category: 'lending', source: 'builtin' },
+        '0x4c6f947ae67f572afa4ae0730947de7c874f95ef': { name: 'Arbitrum L2 Gateway Router (ERC20)', category: 'bridge', source: 'builtin' },
+        '0x096760f208390250649e3e8763348e78318f1c23': { name: 'Arbitrum Standard ERC20 Gateway (L2)', category: 'bridge', source: 'builtin' },
+        '0xa52b3355b6e42e38ae8ec3f5e4df9abdc523e843': { name: 'Arbitrum WETH/ETH Gateway (L2)', category: 'bridge', source: 'builtin' }
+    },
+    optimism: {
+        '0x1111111254760f7ab3f16433eea9304126dcf199': { name: '1inch Aggregation Router v5 (Optimism)', category: 'dex/router', source: 'builtin' },
+        '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' },
+        '0x6f1e1d7f6f1437e2dfbd64b7b50a1c7c8c8b74f6': { name: 'Optimism L2 Standard Bridge', category: 'bridge', source: 'builtin' }
+    },
+    polygon: {
+        '0x1111111254760f7ab3f16433eea9304126dcf199': { name: '1inch Aggregation Router v5 (Polygon)', category: 'dex/router', source: 'builtin' },
+        '0x1b02da8cb0d097eb8d57a175b88c7d8b47997506': { name: 'SushiSwap Router', category: 'dex/router', source: 'builtin' },
+        '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' }
+    },
+    base: {
+        '0x1111111254760f7ab3f16433eea9304126dcf199': { name: '1inch Aggregation Router v5 (Base)', category: 'dex/router', source: 'builtin' },
+        '0x474e3c26b02e3f5f4a5ffcd17a04528d7dc21634': { name: 'Base L2 Standard Bridge', category: 'bridge', source: 'builtin' },
+        '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' }
+    }
+};
+
 // Common ABIs for all chains
 const COMMON_ABIS = {
     'ERC20': [
@@ -279,6 +319,56 @@ const COMMON_ABIS = {
             "stateMutability": "payable",
             "type": "function"
         }
+    ],
+    'ArbitrumDelayedInbox': [
+        { "inputs": [{ "internalType": "uint256", "name": "_maxDataSize", "type": "uint256" }], "stateMutability": "nonpayable", "type": "constructor" },
+        { "inputs": [{ "internalType": "uint256", "name": "dataLength", "type": "uint256" }, { "internalType": "uint256", "name": "maxDataLength", "type": "uint256" }], "name": "DataTooLarge", "type": "error" },
+        { "inputs": [], "name": "GasLimitTooLarge", "type": "error" },
+        { "inputs": [{ "internalType": "uint256", "name": "expected", "type": "uint256" }, { "internalType": "uint256", "name": "actual", "type": "uint256" }], "name": "InsufficientSubmissionCost", "type": "error" },
+        { "inputs": [{ "internalType": "uint256", "name": "expected", "type": "uint256" }, { "internalType": "uint256", "name": "actual", "type": "uint256" }], "name": "InsufficientValue", "type": "error" },
+        { "inputs": [], "name": "L1Forked", "type": "error" },
+        { "inputs": [{ "internalType": "address", "name": "origin", "type": "address" }], "name": "NotAllowedOrigin", "type": "error" },
+        { "inputs": [], "name": "NotCodelessOrigin", "type": "error" },
+        { "inputs": [], "name": "NotForked", "type": "error" },
+        { "inputs": [], "name": "NotOrigin", "type": "error" },
+        { "inputs": [{ "internalType": "address", "name": "sender", "type": "address" }, { "internalType": "address", "name": "owner", "type": "address" }], "name": "NotOwner", "type": "error" },
+        { "inputs": [{ "internalType": "address", "name": "sender", "type": "address" }, { "internalType": "address", "name": "rollup", "type": "address" }, { "internalType": "address", "name": "owner", "type": "address" }], "name": "NotRollupOrOwner", "type": "error" },
+        { "inputs": [{ "internalType": "address", "name": "from", "type": "address" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "l2CallValue", "type": "uint256" }, { "internalType": "uint256", "name": "deposit", "type": "uint256" }, { "internalType": "uint256", "name": "maxSubmissionCost", "type": "uint256" }, { "internalType": "address", "name": "excessFeeRefundAddress", "type": "address" }, { "internalType": "address", "name": "callValueRefundAddress", "type": "address" }, { "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "RetryableData", "type": "error" },
+        { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "user", "type": "address" }, { "indexed": false, "internalType": "bool", "name": "val", "type": "bool" }], "name": "AllowListAddressSet", "type": "event" },
+        { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "bool", "name": "isEnabled", "type": "bool" }], "name": "AllowListEnabledUpdated", "type": "event" },
+        { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "uint256", "name": "messageNum", "type": "uint256" }, { "indexed": false, "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "InboxMessageDelivered", "type": "event" },
+        { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "uint256", "name": "messageNum", "type": "uint256" }], "name": "InboxMessageDeliveredFromOrigin", "type": "event" },
+        { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint8", "name": "version", "type": "uint8" }], "name": "Initialized", "type": "event" },
+        { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "address", "name": "account", "type": "address" }], "name": "Paused", "type": "event" },
+        { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "address", "name": "account", "type": "address" }], "name": "Unpaused", "type": "event" },
+        { "inputs": [], "name": "allowListEnabled", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "bridge", "outputs": [{ "internalType": "contract IBridge", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "dataLength", "type": "uint256" }, { "internalType": "uint256", "name": "baseFee", "type": "uint256" }], "name": "calculateRetryableSubmissionFee", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "l2CallValue", "type": "uint256" }, { "internalType": "uint256", "name": "maxSubmissionCost", "type": "uint256" }, { "internalType": "address", "name": "excessFeeRefundAddress", "type": "address" }, { "internalType": "address", "name": "callValueRefundAddress", "type": "address" }, { "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "createRetryableTicket", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "payable", "type": "function" },
+        { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "l2CallValue", "type": "uint256" }, { "internalType": "uint256", "name": "maxSubmissionCost", "type": "uint256" }, { "internalType": "address", "name": "excessFeeRefundAddress", "type": "address" }, { "internalType": "address", "name": "callValueRefundAddress", "type": "address" }, { "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "createRetryableTicketNoRefundAliasRewrite", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "payable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "name": "depositEth", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "payable", "type": "function" },
+        { "inputs": [], "name": "depositEth", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "payable", "type": "function" },
+        { "inputs": [], "name": "getProxyAdmin", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "internalType": "contract IBridge", "name": "_bridge", "type": "address" }, { "internalType": "contract ISequencerInbox", "name": "_sequencerInbox", "type": "address" }], "name": "initialize", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "address", "name": "", "type": "address" }], "name": "isAllowed", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "maxDataSize", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "pause", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [], "name": "paused", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "internalType": "contract IBridge", "name": "", "type": "address" }], "name": "postUpgradeInit", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "sendContractTransaction", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "sendL1FundedContractTransaction", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "payable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "uint256", "name": "nonce", "type": "uint256" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "sendL1FundedUnsignedTransaction", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "payable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "uint256", "name": "nonce", "type": "uint256" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "sendL1FundedUnsignedTransactionToFork", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "payable", "type": "function" },
+        { "inputs": [{ "internalType": "bytes", "name": "messageData", "type": "bytes" }], "name": "sendL2Message", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "bytes", "name": "messageData", "type": "bytes" }], "name": "sendL2MessageFromOrigin", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "uint256", "name": "nonce", "type": "uint256" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "sendUnsignedTransaction", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "uint256", "name": "nonce", "type": "uint256" }, { "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "value", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "sendUnsignedTransactionToFork", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "uint256", "name": "nonce", "type": "uint256" }, { "internalType": "uint256", "name": "value", "type": "uint256" }, { "internalType": "address", "name": "withdrawTo", "type": "address" }], "name": "sendWithdrawEthToFork", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [], "name": "sequencerInbox", "outputs": [{ "internalType": "contract ISequencerInbox", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "internalType": "address[]", "name": "user", "type": "address[]" }, { "internalType": "bool[]", "name": "val", "type": "bool[]" }], "name": "setAllowList", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "bool", "name": "_allowListEnabled", "type": "bool" }], "name": "setAllowListEnabled", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [], "name": "unpause", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "l2CallValue", "type": "uint256" }, { "internalType": "uint256", "name": "maxSubmissionCost", "type": "uint256" }, { "internalType": "address", "name": "excessFeeRefundAddress", "type": "address" }, { "internalType": "address", "name": "callValueRefundAddress", "type": "address" }, { "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "unsafeCreateRetryableTicket", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "payable", "type": "function" }
     ],
     'EWCLiftContract': [
         { "type": "constructor", "stateMutability": "nonpayable", "inputs": [] }, { "type": "error", "name": "AddressMismatch", "inputs": [] }, { "type": "error", "name": "AlreadyAdded", "inputs": [] }, { "type": "error", "name": "AuthorsDisabled", "inputs": [] }, { "type": "error", "name": "BadConfirmations", "inputs": [] }, { "type": "error", "name": "BelowMinimumLift", "inputs": [] }, { "type": "error", "name": "CannotChangeT2Key", "inputs": [{ "type": "bytes32", "name": "existingT2PubKey", "internalType": "bytes32" }] }, {
@@ -433,4 +523,15 @@ function getAddressLabel(address) {
     if (!address) return null;
     const book = getAddressBook();
     return book[address.toLowerCase()];
+}
+
+function getKnownContract(address, chainKey) {
+    if (!address) return null;
+    const key = chainKey || currentChain;
+    const map = KNOWN_CONTRACTS[key];
+    if (map) {
+        const entry = map[address.toLowerCase()];
+        if (entry) return entry;
+    }
+    return null;
 }

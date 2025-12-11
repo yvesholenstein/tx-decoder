@@ -36,7 +36,7 @@
             </button>
             <h1>EVM Transaction Decoder</h1>
             <p>Decode smart contract transactions across EVM chains</p>
-            <span class="version-badge">v0.2.3</span>
+            <span class="version-badge">v0.9.1</span>
         </div>
 
         <div class="content">
@@ -83,9 +83,15 @@
                     <div class="small-text">Leave empty to use best-effort heuristic decoding</div>
                 </div>
                 <div class="form-group">
-                    <label>Value (wei) <span style="color:#999;">(optional)</span></label>
+                    <div class="value-label-row">
+                        <label>Value (wei) <span style="color:#999;">(optional)</span></label>
+                        <div class="wei-helper">
+                            <input type="text" id="manual-native-amount" class="compact-input" placeholder="0.01">
+                            <button type="button" class="pill-btn" onclick="convertToWei('manual')">Convert to wei</button>
+                        </div>
+                    </div>
                     <input type="text" id="manual-tx-value" placeholder="0">
-                    <div class="small-text">Native value sent with the call. Needed to show native outflow impact.</div>
+                    <div class="small-text">Native value sent with the call. Quick convert lets you enter whole/native units without counting zeros.</div>
                 </div>
                 <details class="optional-section" id="manual-optional">
                     <summary>Optional: Provide transaction envelope fields</summary>
@@ -168,9 +174,15 @@
                     <textarea id="auto-tx-data" placeholder="0x095ea7b3000000000000000000000000..."></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Value (wei) <span style="color:#999;">(optional)</span></label>
+                    <div class="value-label-row">
+                        <label>Value (wei) <span style="color:#999;">(optional)</span></label>
+                        <div class="wei-helper">
+                            <input type="text" id="auto-native-amount" class="compact-input" placeholder="0.01">
+                            <button type="button" class="pill-btn" onclick="convertToWei('auto')">Convert to wei</button>
+                        </div>
+                    </div>
                     <input type="text" id="auto-tx-value" placeholder="0">
-                    <div class="small-text">Native value sent with the call. Needed to show native outflow impact.</div>
+                    <div class="small-text">Native value sent with the call. Quick convert lets you enter whole/native units without counting zeros.</div>
                 </div>
                 <details class="optional-section" id="auto-optional">
                     <summary>Optional: Provide transaction envelope fields</summary>

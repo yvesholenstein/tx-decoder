@@ -809,6 +809,60 @@ body.dark-mode .tooltip-text::after {
     color: #fff;
 }
 
+.value-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.value-label-row label {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.wei-helper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.compact-input {
+    width: 110px;
+    padding: 3px 6px;
+    height: 24px;
+    font-size: 12px;
+}
+
+.wei-helper .pill-btn {
+    height: 24px;
+    padding: 2px 10px;
+    line-height: 20px;
+    font-size: 12px;
+    border-radius: 999px;
+    border: 1px solid #e26f74;
+    background: #fde6e7;
+    color: #b30b12;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.wei-helper .pill-btn:hover {
+    background: #fbd3d6;
+    border-color: #d94d54;
+}
+
+body.dark-mode .wei-helper .pill-btn {
+    background: #4a1d21;
+    border-color: #c2575d;
+    color: #ffb3b7;
+}
+
 .tooltip-text ul {
     margin: 6px 0 0 0;
     padding-left: 18px;

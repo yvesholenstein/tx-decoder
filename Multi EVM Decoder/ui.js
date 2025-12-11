@@ -220,6 +220,23 @@ function handleRemoveAddress(address) {
     }
 }
 
+function convertToWei(prefix) {
+    const input = document.getElementById(`${prefix}-native-amount`);
+    const target = document.getElementById(`${prefix}-tx-value`);
+    if (!input || !target) return;
+    const raw = (input.value || '').trim();
+    if (!raw) return;
+
+    try {
+        const chain = getCurrentChain();
+        const decimals = chain?.nativeCurrency?.decimals ?? 18;
+        const weiValue = ethers.utils.parseUnits(raw, decimals);
+        target.value = weiValue.toString();
+    } catch (e) {
+        alert('Could not convert amount. Please enter a valid number (e.g., 0.01).');
+    }
+}
+
 // Hook into openSettings to render the list
 // We do this check to prevent double wrapping if the script re-runs
 if (!window.hasInitializedAddressBookHook) {

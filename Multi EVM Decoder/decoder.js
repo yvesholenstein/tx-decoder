@@ -320,7 +320,7 @@ function renderSimulationBlock(result, targetAddress) {
     const lines = [];
 
     if (result.status === 'success') {
-        lines.push('eth_call succeeded (no state change performed).');
+        lines.push('eth_call succeeded (dry-run only; no state persisted).');
         if (result.returnData && result.returnData !== '0x') {
             lines.push(`Return data: ${result.returnData.slice(0, 74)}${result.returnData.length > 74 ? '...' : ''}`);
         }
@@ -822,6 +822,7 @@ const ENERGY_WEB_BRIDGE_ADDRESSES = {
     ewcLift: '0x0bdb4ff8396fbd0b8baa9cf2ea188cc620d5d2b1',
     ethPermitLift: '0x5dded30f8cd557257ccdc4a530cb77ac45f0259d'
 };
+const ARBITRUM_DELAYED_INBOX_ADDRESS = '0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f';
 const ENERGY_WEB_PERMIT_TOKEN = '0xb66a5d30d04f076e78ffb0d045c55846fdcde928';
 const SNOWBRIDGE_GATEWAY_ADDRESS = '0x27ca963c279c93801941e1eb8799c23f407d68e7';
 const PORTAL_FORWARDER_ADDRESSES = new Set([
@@ -1782,6 +1783,9 @@ function buildBridgeAssessment(decoded, interpretations = []) {
             target === ENERGY_WEB_BRIDGE_ADDRESSES.ethPermitLift) {
             return buildEnergyWebBridgeSummary(decoded, interpretations, target);
         }
+        if (target === ARBITRUM_DELAYED_INBOX_ADDRESS) {
+            return buildArbitrumBridgeSummary(decoded);
+        }
         if (target === SNOWBRIDGE_GATEWAY_ADDRESS) {
             return buildSnowbridgeSummary(decoded, interpretations);
         }
@@ -1806,6 +1810,9 @@ function buildBridgeAssessment(decoded, interpretations = []) {
         if (LAYERZERO_SIGNATURES.has(signature)) {
             return buildLayerZeroSummary(decoded);
         }
+        if (signature === 'createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,bytes)') {
+            return buildArbitrumBridgeSummary(decoded);
+        }
     }
 
     return null;
@@ -1817,6 +1824,23 @@ function formatAddressWithTokenInfo(address) {
         const info = getTokenInfo(address);
         if (info) {
             return `${address} (${info.symbol})`;
+        }
+    } catch (_) {
+        // ignore lookup issues
+    }
+    return address;
+}
+
+function formatAddressWithName(address) {
+    if (!address) return address;
+    try {
+        const known = getKnownContract(address);
+        if (known?.name) {
+            return `${address} (${known.name})`;
+        }
+        const book = getAddressLabel(address);
+        if (book?.label) {
+            return `${address} (${book.label})`;
         }
     } catch (_) {
         // ignore lookup issues
@@ -1940,6 +1964,129 @@ function buildEnergyWebBridgeSummary(decoded, interpretations, matchedAddress) {
     }
 
     return null;
+}
+
+function buildArbitrumBridgeSummary(decoded) {
+    const args = decoded.args || [];
+    const chainInfo = getCurrentChain();
+    const nativeSymbol = chainInfo?.nativeCurrency?.symbol || chainInfo?.nativeSymbol || 'ETH';
+    const l2Recipient = args[0];
+    const l2CallValue = args[1] ? ethers.BigNumber.from(args[1]) : null;
+    const maxSubmissionCost = args[2] ? ethers.BigNumber.from(args[2]) : null;
+    const excessFeeRefundAddress = args[3];
+    const callValueRefundAddress = args[4];
+    const gasLimit = args[5] ? ethers.BigNumber.from(args[5]) : null;
+    const maxFeePerGas = args[6] ? ethers.BigNumber.from(args[6]) : null;
+    const dataBytes = args[7];
+    const msgValue = decoded.value ? ethers.BigNumber.from(decoded.value) : ethers.BigNumber.from(0);
+
+    let totalCost = null;
+    if (l2CallValue && maxSubmissionCost && gasLimit && maxFeePerGas) {
+        totalCost = l2CallValue.add(maxSubmissionCost).add(gasLimit.mul(maxFeePerGas));
+    }
+
+    const summary = {
+        bridgeName: 'Arbitrum Native Bridge',
+        confidence: 'high',
+        likelyFunction: 'createRetryableTicket(address to, uint256 l2CallValue, uint256 maxSubmissionCost, address excessFeeRefundAddress, address callValueRefundAddress, uint256 gasLimit, uint256 maxFeePerGas, bytes data)',
+        description: 'Delayed Inbox (L1 forwarder) sends a retryable ticket into the Arbitrum Bridge. Funds are escrowed on L1 and delivered to L2 with the provided calldata.',
+        hint: 'Parameters are forwarded as-is to the Arbitrum Bridge. Verify the L2 recipient, amount, and fee caps before signing.',
+        docUrl: 'https://docs.arbitrum.io/',
+        parameters: []
+    };
+
+    if (l2Recipient) {
+        summary.parameters.push({
+            name: 'L2 recipient',
+            type: 'address',
+            description: 'Address that receives the call/value on Arbitrum',
+            value: l2Recipient
+        });
+    }
+
+    if (l2CallValue) {
+        summary.parameters.push({
+            name: 'L2 call value',
+            type: 'uint256',
+            description: `Native amount delivered on L2`,
+            value: l2CallValue.toString(),
+            formatted: `${formatWithCommas(ethers.utils.formatEther(l2CallValue))} ${nativeSymbol}`
+        });
+    }
+
+    if (maxSubmissionCost) {
+        summary.parameters.push({
+            name: 'Max submission cost',
+            type: 'uint256',
+            description: 'Fee ceiling for posting the retryable ticket on L1',
+            value: maxSubmissionCost.toString(),
+            formatted: `${formatWithCommas(ethers.utils.formatEther(maxSubmissionCost))} ${nativeSymbol}`
+        });
+    }
+
+    if (gasLimit && maxFeePerGas) {
+        const gasCost = gasLimit.mul(maxFeePerGas);
+        summary.parameters.push({
+            name: 'Gas budget & bid',
+            type: 'uint256',
+            description: 'L2 execution gas limit and max fee per gas for the retryable',
+            value: `${gasLimit.toString()} @ ${maxFeePerGas.toString()}`,
+            formatted: `${gasLimit.toString()} gas × ${ethers.utils.formatUnits(maxFeePerGas, 'gwei')} gwei = ${formatWithCommas(ethers.utils.formatEther(gasCost))} ${nativeSymbol}`
+        });
+    }
+
+    if (totalCost) {
+        const formattedTotal = formatWithCommas(ethers.utils.formatEther(totalCost));
+        const msgValNote = msgValue && !msgValue.isZero()
+            ? ` (tx value: ${formatWithCommas(ethers.utils.formatEther(msgValue))} ${nativeSymbol})`
+            : '';
+        summary.parameters.push({
+            name: 'Total escrowed on L1',
+            type: 'uint256',
+            description: 'Expected total funding for retryable ticket',
+            value: totalCost.toString(),
+            formatted: `${formattedTotal} ${nativeSymbol}${msgValNote}`
+        });
+    }
+
+    if (excessFeeRefundAddress) {
+        summary.parameters.push({
+            name: 'Excess fee refund',
+            type: 'address',
+            description: 'Receives surplus submission/gas fees',
+            value: excessFeeRefundAddress
+        });
+    }
+
+    if (callValueRefundAddress) {
+        summary.parameters.push({
+            name: 'Call value refund',
+            type: 'address',
+            description: 'Receives refund if L2 execution fails',
+            value: callValueRefundAddress
+        });
+    }
+
+    if (dataBytes !== undefined) {
+        const hexData = typeof dataBytes === 'string' ? dataBytes : (dataBytes?.toString?.() || '');
+        const dataLength = hexData.startsWith('0x') ? (hexData.length - 2) / 2 : hexData.length / 2;
+        const preview = hexData && hexData.length > 10 ? `${hexData.slice(0, 66)}...` : (hexData || '0x');
+        summary.parameters.push({
+            name: 'Calldata forwarded',
+            type: 'bytes',
+            description: dataLength === 0 ? 'Empty calldata (pure value transfer on L2)' : `Forwarded to L2 target; non-empty calldata length ${dataLength} bytes`,
+            value: preview
+        });
+    }
+
+    summary.parameters.push({
+        name: 'Forwarder',
+        type: 'note',
+        description: 'Delayed Inbox is a proxy/forwarder; it forwards these parameters into the Arbitrum Bridge to create the retryable ticket.',
+        value: 'Parameters are passed through unchanged.'
+    });
+
+    return summary;
 }
 
 function buildSnowbridgeSummary(decoded) {
@@ -2813,9 +2960,9 @@ async function displayDecoded(decoded, options = {}) {
     let html = '';
 
     const riskLabels = {
-        'low': '�o" Low Risk',
-        'medium': '�s� Medium Risk',
-        'high': '�s� High Risk'
+        'low': 'Low Risk',
+        'medium': 'Medium Risk',
+        'high': 'High Risk'
     };
 
     const isApproval = decoded.functionName.toLowerCase().includes('approve');
@@ -2853,14 +3000,14 @@ async function displayDecoded(decoded, options = {}) {
                    <li>Commonly used by DEXs for convenience</li>
                    <li>Can be revoked anytime</li>
                </ul>
-               <em>�s���? Only approve highly trusted contracts!</em>`
+               <em>Warning: Only approve highly trusted contracts!</em>`
             : `<strong>High Risk Transaction</strong>
                <ul>
                    <li>Transfers contract ownership</li>
                    <li>Executes delegatecalls</li>
                    <li>Sets operator permissions (NFTs)</li>
-               </ul>
-               <em>�s���? Only approve trusted contracts!</em>`
+                </ul>
+                <em>Warning: Only approve trusted contracts!</em>`
     };
 
     html += `<div class="risk-badge risk-${riskLevel}">
@@ -3382,7 +3529,8 @@ function generateTransactionSummary(decoded) {
             formattedAmount = formatWithCommas(formattedAmount);
         } catch (e) { }
 
-        description = `Approving <strong>${spender}</strong> to spend <strong>${formattedAmount} ${symbol}</strong>`;
+        const spenderDisplay = formatAddressWithName(spender);
+        description = `Approving <strong>${spenderDisplay}</strong> to spend <strong>${formattedAmount} ${symbol}</strong>`;
         hint = 'Check if the spender is a trusted contract.';
     } else if (decoded.functionName === 'transformERC20') {
         description = `Swapping tokens via 0x API (transformERC20)`;
