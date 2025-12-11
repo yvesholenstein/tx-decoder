@@ -403,19 +403,24 @@ body.dark-mode .info-value {
 }
 
 .param-item {
-    margin: 0 0 6px 0;
-    padding: 8px 10px;
+    margin: 0 0 4px 0;
+    padding: 6px 8px;
     background: #f8f9fa;
     border-radius: 8px;
     transition: background 0.3s ease;
     word-break: break-word;
     overflow-wrap: anywhere;
-    white-space: pre-wrap;
+    white-space: normal;
+    color: #222;
 }
 
 body.dark-mode .param-item {
     background: #3a3a3a;
-    color: #ffffff;
+    color: #eaeaea;
+}
+
+.param-item strong {
+    color: inherit;
 }
 
 .param-item > span {
@@ -868,6 +873,10 @@ body.dark-mode .optional-section {
     font-weight: 600;
     cursor: pointer;
     outline: none;
+}
+
+body.dark-mode .optional-section summary {
+    color: #e0e0e0;
 }
 
 .optional-section[open] {

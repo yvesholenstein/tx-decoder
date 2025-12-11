@@ -2973,6 +2973,24 @@ async function displayDecoded(decoded, options = {}) {
 
             html += `</div></div>`;
         }
+
+        if (typeof validateBridgeCall === 'function') {
+            const validation = validateBridgeCall(bridgeSummary, decoded);
+            if (validation?.results?.length) {
+                html += `<div class="info-row">
+                    <div class="info-label">Bridge Validation</div>
+                    <div class="info-value">
+                        <div class="param-group" style="padding-left:0; border-left:none;">`;
+                validation.results.forEach(res => {
+                    const cls = res.status === 'success' ? 'success' : (res.status === 'fail' ? 'error' : 'warning');
+                    html += `<div class="param-item">
+                        <div><span class="status-pill ${cls}" style="margin-right:8px;">${res.status.toUpperCase()}</span><strong>${res.label}</strong></div>
+                        ${res.detail ? `<div style="color:#666; margin-top:4px;">${res.detail}</div>` : ''}
+                    </div>`;
+                });
+                html += `</div></div></div>`;
+            }
+        }
     }
 
     if (decoded.fragment && decoded.args && decoded.fragment.inputs) {
