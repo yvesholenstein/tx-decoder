@@ -370,6 +370,50 @@ const COMMON_ABIS = {
         { "inputs": [], "name": "unpause", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
         { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "l2CallValue", "type": "uint256" }, { "internalType": "uint256", "name": "maxSubmissionCost", "type": "uint256" }, { "internalType": "address", "name": "excessFeeRefundAddress", "type": "address" }, { "internalType": "address", "name": "callValueRefundAddress", "type": "address" }, { "internalType": "uint256", "name": "gasLimit", "type": "uint256" }, { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" }, { "internalType": "bytes", "name": "data", "type": "bytes" }], "name": "unsafeCreateRetryableTicket", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "payable", "type": "function" }
     ],
+    'ArbitrumL1GatewayRouter': [
+        {
+            "inputs": [
+                { "internalType": "address", "name": "_l1Token", "type": "address" },
+                { "internalType": "address", "name": "_to", "type": "address" },
+                { "internalType": "uint256", "name": "_amount", "type": "uint256" },
+                { "internalType": "uint256", "name": "_maxGas", "type": "uint256" },
+                { "internalType": "uint256", "name": "_gasPriceBid", "type": "uint256" },
+                { "internalType": "bytes", "name": "_data", "type": "bytes" }
+            ],
+            "name": "outboundTransfer",
+            "outputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                { "internalType": "address", "name": "_l1Token", "type": "address" },
+                { "internalType": "address", "name": "_refundTo", "type": "address" },
+                { "internalType": "address", "name": "_to", "type": "address" },
+                { "internalType": "uint256", "name": "_amount", "type": "uint256" },
+                { "internalType": "uint256", "name": "_maxGas", "type": "uint256" },
+                { "internalType": "uint256", "name": "_gasPriceBid", "type": "uint256" },
+                { "internalType": "bytes", "name": "_data", "type": "bytes" }
+            ],
+            "name": "outboundTransferCustomRefund",
+            "outputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                { "internalType": "address", "name": "_l1Token", "type": "address" },
+                { "internalType": "address", "name": "_from", "type": "address" },
+                { "internalType": "address", "name": "_to", "type": "address" },
+                { "internalType": "uint256", "name": "_amount", "type": "uint256" },
+                { "internalType": "bytes", "name": "_data", "type": "bytes" }
+            ],
+            "name": "finalizeInboundTransfer",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ],
     'EWCLiftContract': [
         { "type": "constructor", "stateMutability": "nonpayable", "inputs": [] }, { "type": "error", "name": "AddressMismatch", "inputs": [] }, { "type": "error", "name": "AlreadyAdded", "inputs": [] }, { "type": "error", "name": "AuthorsDisabled", "inputs": [] }, { "type": "error", "name": "BadConfirmations", "inputs": [] }, { "type": "error", "name": "BelowMinimumLift", "inputs": [] }, { "type": "error", "name": "CannotChangeT2Key", "inputs": [{ "type": "bytes32", "name": "existingT2PubKey", "internalType": "bytes32" }] }, {
             "type": "error", "name": "InvalidProof",

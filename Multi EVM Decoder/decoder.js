@@ -690,6 +690,22 @@ async function fetchTokenInfoViaExplorer(address) {
             const data = await fetchTokenInfoFromEndpoint(endpoint);
             if (data) return data;
         }
+
+        // Try common ABIs before giving up
+        const commonResult = tryCommonAbis(txData);
+        if (commonResult) {
+            try {
+                const decodedCommon = await decodeTxData(txData, commonResult.abi, commonResult.protocol, contractAddress);
+                if (decodedCommon) {
+                    updateDecodeStatus(`Decoded using common ABI (${commonResult.protocol}).`, 'success');
+                    attachTransactionHash(decodedCommon, txMeta, txData);
+                    await displayDecoded(decodedCommon, simulationOptions);
+                    return;
+                }
+            } catch (e) {
+                console.info('Decoding with common ABI failed:', e.message || e);
+            }
+        }
     } catch (error) {
         console.info('Explorer token info lookup failed, falling back to RPC.', error.message || error);
     }
@@ -3035,7 +3051,16 @@ async function displayDecoded(decoded, options = {}) {
     const labelReference = getAddressLabel(decoded.contractAddress);
     const generalSummary = generateTransactionSummary(decoded);
     const bridgeSummary = buildBridgeAssessment(decoded, decoded.interpretations || []);
-    const finalSummary = bridgeSummary || generalSummary;
+    let finalSummary = bridgeSummary || generalSummary;
+
+    // If this was decoded via proxy path and no summary matched, still show a proxy-aware summary.
+    if (!finalSummary && decoded.functionName) {
+        const targetLabel = formatAddressWithName(decoded.contractAddress || '');
+        finalSummary = {
+            description: `Calling <strong>${decoded.functionName}</strong> on ${targetLabel} (decoded via implementation${decoded.proxyWarning ? ' after proxy detection' : ''}).`,
+            hint: decoded.proxyWarning ? decoded.proxyWarning : ''
+        };
+    }
 
     if (finalSummary) {
         html += `<div class="txn-summary">
