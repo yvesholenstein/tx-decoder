@@ -335,7 +335,15 @@ function renderSimulationBlock(result, targetAddress) {
 
     const rpcLine = result.rpcUrl ? `<div class="small-text">RPC: ${result.rpcUrl}</div>` : '';
     return `<div class="info-row">
-        <div class="info-label">Simulation (eth_call)</div>
+        <div class="info-label">Simulation (eth_call)
+            <span class="tooltip-container" style="margin-left:6px;">
+                <span class="tooltip-icon">i</span>
+                <span class="tooltip-text">
+                    This dry-run checks the function exists, calldata is well-formed, and the chain would accept it with the shown gas estimate.
+                    Return data confirms the call completed without revert. It is a sanity check only—no state is changed.
+                </span>
+            </span>
+        </div>
         <div class="info-value">
             <div class="simulation-box">
                 <div><span class="status-pill ${statusClass}">${statusLabel}</span>Target: ${targetAddress}</div>

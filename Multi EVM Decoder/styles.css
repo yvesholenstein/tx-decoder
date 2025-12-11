@@ -737,10 +737,16 @@ input:checked + .slider:before {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.3);
-    color: white;
+    background: #dc0d17;
+    color: #fff;
     font-size: 12px;
     font-weight: bold;
+    text-transform: lowercase;
+}
+
+body.dark-mode .tooltip-icon {
+    background: #e25a62;
+    color: #1a1a1a;
 }
 
 .risk-low .tooltip-icon {
@@ -776,6 +782,7 @@ input:checked + .slider:before {
     font-size: 0.85em;
     line-height: 1.4;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    text-transform: none;
 }
 
 body.dark-mode .tooltip-text {
