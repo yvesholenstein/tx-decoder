@@ -36,6 +36,14 @@ const CHAIN_CONFIG = {
         proxyApiUrl: 'https://api.basescan.org/api',
         nativeCurrency: { symbol: 'ETH', decimals: 18 }
     },
+    hyperevm: {
+        name: 'HyperEVM',
+        chainId: 999,
+        explorerUrl: 'https://purrsec.com/',
+        rpcUrl: 'https://rpc.hyperliquid.xyz/evm',
+        proxyApiUrl: null,
+        nativeCurrency: { symbol: 'HYPE', decimals: 18 }
+    },
     bsc: {
         name: 'BNB Smart Chain',
         chainId: 56,
@@ -147,6 +155,10 @@ const TOKEN_DATABASE = {
         '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913': { symbol: 'USDC', decimals: 6 },
         '0x4200000000000000000000000000000000000006': { symbol: 'WETH', decimals: 18 },
         '0x50c5725949a6f0c72e6c4a641f24049a917db0cb': { symbol: 'DAI', decimals: 18 }
+    },
+    hyperevm: {
+        '0x0000000000000000000000000000000000000000': { symbol: 'HYPE', decimals: 18 },
+        '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee': { symbol: 'HYPE', decimals: 18 }
     },
     energywebchain: {
         '0x0000000000000000000000000000000000000000': { symbol: 'EWT', decimals: 18 },
