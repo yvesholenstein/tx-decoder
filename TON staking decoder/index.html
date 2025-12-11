@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TON Staking Decoder</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <button class="settings-btn" onclick="openSettings()" title="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <button class="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3" stroke="white" stroke-width="2"/><line x1="12" y1="21" x2="12" y2="23" stroke="white" stroke-width="2"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="white" stroke-width="2"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="white" stroke-width="2"/><line x1="1" y1="12" x2="3" y2="12" stroke="white" stroke-width="2"/><line x1="21" y1="12" x2="23" y2="12" stroke="white" stroke-width="2"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="white" stroke-width="2"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="white" stroke-width="2"/></svg>
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <h1>TON Staking Decoder</h1>
+      <p>Decode TON staking transactions (Nominator Pool, Tonstakers, TON Whales)</p>
+      <span class="version-badge" id="version">v0.0.1</span>
+    </div>
+
+    <div class="content">
+      <div class="input-section active">
+        <div class="form-group">
+          <label>Transaction Payload (BOC base64 / hex / ton://)</label>
+          <textarea id="payload-input" placeholder="te6ccgEBAQ... or 0x... or ton://transfer?...&boc=..."></textarea>
+          <div class="small-text">Paste the payload from your wallet or dApp. The decoder auto-detects format.</div>
+        </div>
+        <div class="buttons-row">
+          <button type="button" class="decode-btn" id="decode-btn">Decode Transaction</button>
+          <button type="button" class="decode-btn" style="border: 2px solid #dc0d17; background: transparent; color: #dc0d17;" id="clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <div id="output" class="output-section">
+        <div class="output-box"><div id="output-content"></div></div>
+      </div>
+    </div>
+
+    <div class="copyright">Copyright © 2025 by Yves Holenstein</div>
+  </div>
+
+  <div id="settings-modal" class="settings-modal" onclick="if(event.target === this) closeSettings()">
+    <div class="settings-content">
+      <div class="settings-header">
+        <h2>Settings</h2>
+        <button class="close-btn" onclick="closeSettings()">✕</button>
+      </div>
+      <div class="settings-group">
+        <h3>Display Options</h3>
+        <div class="toggle-switch">
+          <label for="show-advanced">Show Advanced Details</label>
+          <label class="switch"><input type="checkbox" id="show-advanced" checked onchange="saveSettings()"><span class="slider"></span></label>
+        </div>
+      </div>
+      <div class="settings-group">
+        <h3>Notes</h3>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 10px; font-size: 0.9em; color: #666;">
+          <p style="margin: 0;">Hash is computed from the external message (what the hardware wallet signs). Pending library hookup.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TON libraries (for hashing/parsing) -->
+  <script src="https://unpkg.com/tonweb@0.0.67/dist/tonweb.min.js"></script>
+  <script src="config.js"></script>
+  <script src="protocols/nominatorPool.js"></script>
+  <script src="protocols/tonstakers.js"></script>
+  <script src="protocols/tonwhales.js"></script>
+  <!-- Optional: ton-core for robust TL-B parsing -->
+  <script src="https://unpkg.com/ton-core@0.53.0/dist/ton-core.min.js"></script>
+  <script src="decoder.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>

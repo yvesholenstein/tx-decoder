@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Bundle Structure</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        h1 { color: #4ec9b0; }
+        h2 { color: #dcdcaa; }
+        pre {
+            background: #252526;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #252526;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bundle Structure Debug</h1>
+    <p>Inspecting what's actually exported by the bundles...</p>
+
+    <div id="output"></div>
+
+    <script src="libraries/bitcoinjs-lib.bundle.js"></script>
+    <script src="libraries/secp256k1.bundle.js"></script>
+    <script src="libraries/sha256.bundle.js"></script>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function addSection(title, content) {
+            const section = document.createElement('div');
+            section.className = 'section';
+            section.innerHTML = `<h2>${title}</h2><pre>${content}</pre>`;
+            output.appendChild(section);
+        }
+
+        // Check what's on window
+        addSection('window.bitcoin', `
+Type: ${typeof window.bitcoin}
+Is Object: ${typeof window.bitcoin === 'object'}
+Keys: ${window.bitcoin ? Object.keys(window.bitcoin).slice(0, 20).join(', ') : 'N/A'}
+`);
+
+        addSection('window.bitcoin.default (if exists)', `
+Type: ${typeof window.bitcoin?.default}
+Has default.payments: ${typeof window.bitcoin?.default?.payments !== 'undefined'}
+Has default.ECPair: ${typeof window.bitcoin?.default?.ECPair !== 'undefined'}
+`);
+
+        addSection('window.bitcoin direct properties', `
+Has bitcoin.payments: ${typeof window.bitcoin?.payments !== 'undefined'}
+Has bitcoin.ECPair: ${typeof window.bitcoin?.ECPair !== 'undefined'}
+Has bitcoin.networks: ${typeof window.bitcoin?.networks !== 'undefined'}
+`);
+
+        addSection('window.nobleSecp256k1', `
+Type: ${typeof window.nobleSecp256k1}
+Is Object: ${typeof window.nobleSecp256k1 === 'object'}
+Keys: ${window.nobleSecp256k1 ? Object.keys(window.nobleSecp256k1).slice(0, 20).join(', ') : 'N/A'}
+`);
+
+        addSection('window.nobleSecp256k1.default (if exists)', `
+Type: ${typeof window.nobleSecp256k1?.default}
+Has default.utils: ${typeof window.nobleSecp256k1?.default?.utils !== 'undefined'}
+`);
+
+        addSection('window.nobleSecp256k1 direct properties', `
+Has nobleSecp256k1.utils: ${typeof window.nobleSecp256k1?.utils !== 'undefined'}
+Has nobleSecp256k1.sign: ${typeof window.nobleSecp256k1?.sign !== 'undefined'}
+Has nobleSecp256k1.verify: ${typeof window.nobleSecp256k1?.verify !== 'undefined'}
+`);
+
+        addSection('window.nobleSha256', `
+Type: ${typeof window.nobleSha256}
+Has sha256: ${typeof window.nobleSha256?.sha256 !== 'undefined'}
+`);
+
+        // Try to understand the structure
+        if (window.bitcoin && typeof window.bitcoin === 'object') {
+            const allKeys = Object.keys(window.bitcoin);
+            addSection('All bitcoin keys', allKeys.join(', '));
+        }
+
+        if (window.nobleSecp256k1 && typeof window.nobleSecp256k1 === 'object') {
+            const allKeys = Object.keys(window.nobleSecp256k1);
+            addSection('All nobleSecp256k1 keys', allKeys.join(', '));
+        }
+    </script>
+</body>
+</html>

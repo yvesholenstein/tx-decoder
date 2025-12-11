@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babylon Staking Decoder</title>
+    <link rel="stylesheet" href="../Multi EVM Version/styles.css">
+    <link rel="stylesheet" href="babylon-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="settings-btn" onclick="openSettings()" title="Settings">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+            <button class="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3" stroke="white" stroke-width="2"/><line x1="12" y1="21" x2="12" y2="23" stroke="white" stroke-width="2"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="white" stroke-width="2"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="white" stroke-width="2"/><line x1="1" y1="12" x2="3" y2="12" stroke="white" stroke-width="2"/><line x1="21" y1="12" x2="23" y2="12" stroke="white" stroke-width="2"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="white" stroke-width="2"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="white" stroke-width="2"/></svg>
+                <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+            <h1>Babylon Staking Decoder</h1>
+            <p>Calculate and verify Babylon staking transactions</p>
+            <span class="version-badge">v0.2.0</span>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <strong>Hardware Wallet Setup:</strong><br>
+                <strong>Bitcoin:</strong> Sparrow wallet + Keystone 3 (BTC-only firmware, first Taproot address)<br>
+                <strong>Babylon Chain:</strong> Keplr wallet + Ledger Flex
+            </div>
+
+            <div class="mode-selector">
+                <button class="mode-btn active" onclick="switchMode('staking-entry')">Staking Entry</button>
+                <button class="mode-btn" title="not yet implemented..." onclick="">Staking Exit</button>
+                <button class="mode-btn" title="not yet implemented..." onclick="">Rewards Claiming</button>
+                <!-- <button class="mode-btn" onclick="switchMode('staking-exit')">Staking Exit</button>
+                <button class="mode-btn" onclick="switchMode('rewards')">Rewards Claiming</button> -->
+            </div>
+
+            <!-- Staking Entry Mode -->
+            <div id="staking-entry-mode" class="input-section active">
+                <!-- Babylon Address Calculator Section -->
+                <div class="babylon-address-section">
+                    <h2 style="color: #4caf50; margin-bottom: 20px;">Step 1: Calculate Babylon Staking Address</h2>
+
+                    <!-- Online/Offline Mode Toggle -->
+                    <div class="mode-toggle-section" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <label style="font-weight: 600; margin: 0;">Calculation Mode:</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="offline-mode-toggle" onchange="toggleCalculationMode()">
+                                    <label for="offline-mode-toggle" class="toggle-label">
+                                        <span class="toggle-inner"></span>
+                                        <span class="toggle-switch-knob"></span>
+                                    </label>
+                                </div>
+                                <span id="mode-status" style="font-weight: 600; color: #2196F3;">Online Mode</span>
+                            </div>
+                            <div id="mode-description" style="font-size: 0.9em; color: #666;">
+                                Using verified API: christophluescher.pythonanywhere.com
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Staker Public Key (hex) *</label>
+                        <input type="text" id="staker-pubkey" class="large-input" placeholder="8a762ca4ab2a...">
+                        <div class="small-text">Your Bitcoin public key (64 hex characters)</div>
+                    </div>
+
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label>Finality Provider *</label>
+                            <select id="finality-provider" onchange="updateProviderPublicKey()">
+                                <option value="">Select Finality Provider</option>
+                            </select>
+                            <div class="small-text" id="provider-pubkey-display" class="large-input" style="margin-top: 8px; font-family: 'Courier New', monospace; word-break: break-all;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Network</label>
+                            <select id="network" class="large-input">
+                                <option value="mainnet">Mainnet</option>
+                                <option value="testnet">Testnet</option>
+                                <option value="signet">Signet</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label>Bitcoin Amount (BTC) *</label>
+                            <input type="number" id="btc-amount" class="large-input" placeholder="0.01" step="0.00000001" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Network Fee Rate (sats/vB)</label>
+                            <input type="number" id="fee-rate" class="large-input" placeholder="3" value="3" step="0.1" min="1">
+                            <div class="small-text">Default: 3 sats/vB</div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Parameters (Collapsible) -->
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" onclick="toggleCollapsible('advanced-params')">
+                            <span>Advanced Parameters</span>
+                            <span class="arrow" id="arrow-advanced-params">▶</span>
+                        </div>
+                        <div class="collapsible-content" id="advanced-params">
+                            <div class="input-grid">
+                                <div class="form-group">
+                                    <label>Timelock Blocks</label>
+                                    <input type="number" id="timelock-blocks" class="large-input" placeholder="64000" value="64000">
+                                    <div class="small-text">Default: 64000</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Covenant Threshold</label>
+                                    <input type="number" id="covenant-threshold" class="large-input" placeholder="6" value="6">
+                                    <div class="small-text">Default: 6</div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Block Height (optional)</label>
+                                <input type="number" id="block-height" class="large-input" placeholder="Current block height">
+                            </div>
+                            <div class="form-group">
+                                <label>Unbonding Time (blocks)</label>
+                                <input type="number" id="unbonding-time" class="large-input" placeholder="1000" value="1000">
+                                <div class="small-text">Default: 1000</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Covenant Public Keys (JSON array)</label>
+                                <textarea id="covenant-pubkeys" placeholder='["03...", "02...", ...]'></textarea>
+                                <div class="small-text">Leave empty to use network defaults</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-weight: 600;">Enable Debug Mode</span>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="debug-mode">
+                            <label for="debug-mode" class="toggle-label">
+                                <span class="toggle-inner"></span>
+                                <span class="toggle-switch-knob"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button class="decode-btn" onclick="calculateBabylonAddress()" style="margin-top: 20px;">
+                        Calculate Staking Address
+                    </button>
+
+                    <div id="address-error" class="error-message"></div>
+
+                    <div id="babylon-address-result" style="display: none;">
+                        <div class="calculated-address" id="babylon-address-display"></div>
+                        <div id="debug-info" style="display: none;">
+                            <h4 style="margin-top: 20px; color: #666;">Debug Information</h4>
+                            <div class="debug-output" id="debug-output"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Hash Calculation Section -->
+                <h2 style="color: #dc0d17; margin-bottom: 20px; margin-top: 40px;">Step 2: Calculate & Verify Transaction Hashes</h2>
+
+                <div class="info-box">
+                    <strong>Verification Process:</strong> The application will calculate the expected transaction hashes.
+                    Compare these calculated hashes with what's displayed on your Keystone 3 or Ledger Flex device before signing.
+                </div>
+
+                <div class="calculation-step">
+                    <h3><span class="step-number">1</span>Slashing Transaction (Regular Stakes)</h3>
+                    <div class="small-text">
+                        <strong>What to verify on Keystone:</strong><br>
+                        • Input is NOT your staking address<br>
+                        • Outputs: 0.0015 BTC (fees), 0.1% of stake (slashed amount), remainder (change)
+                    </div>
+                    <div class="hash-display" id="hash-slash-regular">
+                        Click "Calculate All Hashes" below to generate
+                    </div>
+                </div>
+
+                <div class="calculation-step">
+                    <h3><span class="step-number">2</span>Slashing Transaction (Unbonding Stakes)</h3>
+                    <div class="small-text">
+                        <strong>What to verify on Keystone:</strong><br>
+                        • Same as above - verify well-formed and doesn't spend from staking address
+                    </div>
+                    <div class="hash-display" id="hash-slash-unbonding">
+                        Click "Calculate All Hashes" below to generate
+                    </div>
+                </div>
+
+                <div class="calculation-step">
+                    <h3><span class="step-number">3</span>BTC Address Link to Babylon Chain</h3>
+                    <div class="small-text">
+                        <strong>What to verify on Keystone:</strong><br>
+                        • Transaction amount must be 0 BTC<br>
+                        • Output must be a simple OP_RETURN
+                    </div>
+                    <div class="hash-display" id="hash-link">
+                        Click "Calculate All Hashes" below to generate
+                    </div>
+                </div>
+
+                <div class="calculation-step">
+                    <h3><span class="step-number">4</span>Stake Announcement on Babylon Chain</h3>
+                    <div class="warning-box">
+                        <strong>Note:</strong> We do not verify the stake announcement as we don't hold critical amounts of funds on Babylon chain addresses.
+                        This transaction can be signed without verification.
+                    </div>
+                    <div class="hash-display" id="hash-announce">
+                        No verification required - sign directly on Keplr/Ledger
+                    </div>
+                </div>
+
+                <div class="calculation-step">
+                    <h3><span class="step-number">5</span>Actual Staking Transaction on Bitcoin</h3>
+                    <div class="form-group">
+                        <label>Your Staking Taproot Address</label>
+                        <input type="text" id="staking-address" placeholder="bc1p...">
+                        <div class="small-text">The address from which you're staking</div>
+                    </div>
+                    <div class="small-text" style="margin-top: 15px;">
+                        <strong>What to verify on Keystone:</strong><br>
+                        • Staking output address matches the calculated Babylon staking address from Step 1<br>
+                        • Amount matches your intended stake
+                    </div>
+                    <div class="hash-display" id="hash-staking">
+                        Click "Calculate All Hashes" below to generate
+                    </div>
+                </div>
+
+                <button class="decode-btn" onclick="calculateAllHashes()">Calculate All Transaction Hashes</button>
+
+                <div id="hashes-error" class="error-message"></div>
+            </div>
+
+            <!-- Staking Exit Mode -->
+            <div id="staking-exit-mode" class="input-section">
+                <div class="info-box">
+                    <strong>Staking Exit / Unbonding</strong><br><br>
+                    The unbonding transactions are deterministically based on the staking transaction that you already verified
+                    during the staking entry process. As long as there are no substantial funds on the address you used to submit
+                    the stake (which should not be the case based on your setup), nothing can be stolen during unbonding.
+                    <br><br>
+                    <strong>Action Required:</strong> You may proceed with signing the unbonding transactions on your Keystone 3
+                    hardware wallet without additional verification.
+                </div>
+
+                <div class="warning-box">
+                    <strong>Security Reminder:</strong><br>
+                    • Ensure your staking address has no substantial balance beyond the staked amount<br>
+                    • The unbonding process uses the same security parameters as your verified staking transaction<br>
+                    • Your funds will be returned to your control after the unbonding period
+                </div>
+
+                <div class="form-group">
+                    <label>Original Staking Transaction Hash (for reference)</label>
+                    <input type="text" id="original-staking-hash" placeholder="Enter your original staking transaction hash">
+                    <div class="small-text">Optional - for your records only</div>
+                </div>
+
+                <button class="decode-btn" onclick="processUnbonding()">Ready to Sign Unbonding Transactions</button>
+            </div>
+
+            <!-- Rewards Claiming Mode -->
+            <div id="rewards-mode" class="input-section">
+                <div class="info-box">
+                    <strong>Rewards Claiming</strong><br><br>
+                    Claiming your staking rewards requires a small amount of BABY tokens in your Babylon wallet to pay for
+                    transaction fees. Your wallet should still have a small amount available from the staking process earlier.
+                    <br><br>
+                    <strong>Required:</strong> Maximum 1 BABY (likely much less) for gas fees
+                </div>
+
+                <div class="warning-box">
+                    <strong>Before Claiming:</strong><br>
+                    • Verify your Babylon wallet (Keplr + Ledger Flex) has sufficient BABY balance<br>
+                    • Ensure your Ledger device is connected and unlocked<br>
+                    • Review the transaction details on your Ledger Flex display before signing
+                </div>
+
+                <div class="form-group">
+                    <label>Babylon Chain Address</label>
+                    <input type="text" id="babylon-address" placeholder="bbn1...">
+                    <div class="small-text">Your Babylon chain address (from Keplr wallet)</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Expected Rewards Amount</label>
+                    <input type="text" id="expected-rewards" placeholder="0.0">
+                    <div class="small-text">Optional - for your reference</div>
+                </div>
+
+                <button class="decode-btn" onclick="processRewardsClaim()">Ready to Claim Rewards</button>
+
+                <div id="rewards-status" style="margin-top: 20px;"></div>
+            </div>
+
+            <div id="output" class="output-section">
+                <div class="output-box"><div id="output-content"></div></div>
+            </div>
+        </div>
+
+        <div class="copyright">Copyright © 2025 by Yves Holenstein</div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="settings-modal" onclick="if(event.target === this) closeSettings()">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2>Settings</h2>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+
+            <div class="settings-group">
+                <h3>Finality Providers</h3>
+                <div id="finality-providers-list"></div>
+
+                <h4 style="margin-top: 20px; margin-bottom: 10px; font-size: 0.9em;">Add New Finality Provider</h4>
+                <div class="form-group">
+                    <label>Provider Name</label>
+                    <input type="text" id="new-provider-name" placeholder="e.g., BitcoinSuisse">
+                </div>
+                <div class="form-group">
+                    <label>Bitcoin Public Key (hex)</label>
+                    <input type="text" id="new-provider-key" placeholder="be2f7942c5dfaa826aec61355ef427fad1095491aa04850c450f812f9b9ca9ed">
+                </div>
+                <button class="decode-btn" onclick="addFinalityProvider()">Add Provider</button>
+            </div>
+
+            <div class="settings-group">
+                <h3>About</h3>
+                <div style="padding: 15px; background: #f8f9fa; border-radius: 10px; font-size: 0.9em; color: #666;">
+                    <p style="margin: 0;">Babylon Staking Decoder v1.1.0<br>
+                    Transaction verification tool for Babylon BTC staking<br><br>
+                    Inspired by: <a href="https://christophluescher.pythonanywhere.com/" target="_blank" style="color: #dc0d17;">christophluescher.pythonanywhere.com</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OLD implementation (use CDN version of libraries)
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bitcoinjs-lib/6.1.5/bitcoinjs-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@noble/secp256k1@1.7.1/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@noble/hashes@1.3.0/sha256.min.js"></script>
+    -->
+
+
+    <!-- NEW (use local version of libraries) -->
+    <script src="libraries/bitcoinjs-lib.bundle.js"></script>
+    <script src="libraries/secp256k1.bundle.js"></script>
+    <script src="libraries/sha256.bundle.js"></script>
+    <script src="libraries/ecc-lib.bundle.js"></script>
+
+    <script src="babylon-script.js"></script>
+</body>
+</html>

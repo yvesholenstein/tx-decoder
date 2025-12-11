@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Offline Libraries</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Offline Libraries Test</h1>
+    <p>Testing if bundled libraries are working correctly...</p>
+
+    <div id="results"></div>
+
+    <script src="libraries/bitcoinjs-lib.bundle.js"></script>
+    <script src="libraries/secp256k1.bundle.js"></script>
+    <script src="libraries/sha256.bundle.js"></script>
+
+    <script>
+        const results = document.getElementById('results');
+
+        function addResult(name, passed, message) {
+            const div = document.createElement('div');
+            div.className = `test-result ${passed ? 'pass' : 'fail'}`;
+            div.innerHTML = `<strong>${name}:</strong> ${passed ? '✅ PASS' : '❌ FAIL'}<br>${message}`;
+            results.appendChild(div);
+        }
+
+        // Test 1: bitcoinjs-lib
+        try {
+            if (typeof bitcoin !== 'undefined' && bitcoin.payments) {
+                addResult('bitcoinjs-lib', true, 'Library loaded successfully. Found bitcoin.payments module.');
+            } else {
+                addResult('bitcoinjs-lib', false, 'Library loaded but structure is incorrect.');
+            }
+        } catch (e) {
+            addResult('bitcoinjs-lib', false, `Error: ${e.message}`);
+        }
+
+        // Test 2: noble/secp256k1
+        try {
+            if (typeof nobleSecp256k1 !== 'undefined' && nobleSecp256k1.utils) {
+                addResult('@noble/secp256k1', true, 'Library loaded successfully. Found nobleSecp256k1.utils module.');
+            } else {
+                addResult('@noble/secp256k1', false, 'Library loaded but structure is incorrect.');
+            }
+        } catch (e) {
+            addResult('@noble/secp256k1', false, `Error: ${e.message}`);
+        }
+
+        // Test 3: noble/hashes sha256
+        try {
+            if (typeof nobleSha256 !== 'undefined' && nobleSha256.sha256) {
+                addResult('@noble/hashes/sha256', true, 'Library loaded successfully. Found nobleSha256.sha256 function.');
+
+                // Test actual hashing
+                const testData = new Uint8Array([1, 2, 3, 4, 5]);
+                const hash = nobleSha256.sha256(testData);
+                if (hash && hash.length === 32) {
+                    addResult('SHA256 Functionality', true, `Hash computed successfully (${hash.length} bytes)`);
+                } else {
+                    addResult('SHA256 Functionality', false, 'Hash computed but length is incorrect');
+                }
+            } else {
+                addResult('@noble/hashes/sha256', false, 'Library loaded but structure is incorrect.');
+            }
+        } catch (e) {
+            addResult('@noble/hashes/sha256', false, `Error: ${e.message}`);
+        }
+
+        // Test 4: Try creating a simple Bitcoin address
+        try {
+            // Test that payments module works
+            if (bitcoin.payments && bitcoin.payments.p2pkh) {
+                // Browserify bundles Buffer - access it from window
+                const Buffer = window.Buffer || globalThis.Buffer;
+
+                if (!Buffer) {
+                    throw new Error('Buffer not available from browserify bundle');
+                }
+
+                // Use a known public key in compressed format (33 bytes)
+                const pubkeyHex = '0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798';
+                const pubkeyBuffer = Buffer.from(pubkeyHex, 'hex');
+
+                const { address } = bitcoin.payments.p2pkh({ pubkey: pubkeyBuffer });
+                addResult('Bitcoin Address Generation', true, `Address generation works! Example: ${address}`);
+            } else {
+                addResult('Bitcoin Address Generation', false, 'payments.p2pkh not available');
+            }
+        } catch (e) {
+            addResult('Bitcoin Address Generation', false, `Error: ${e.message}`);
+        }
+
+        // Summary
+        const allTests = document.querySelectorAll('.test-result');
+        const passed = document.querySelectorAll('.test-result.pass').length;
+        const failed = document.querySelectorAll('.test-result.fail').length;
+
+        const summary = document.createElement('div');
+        summary.style.marginTop = '20px';
+        summary.style.padding = '15px';
+        summary.style.background = passed === allTests.length ? '#d4edda' : '#fff3cd';
+        summary.style.borderRadius = '5px';
+        summary.innerHTML = `<h2>Summary</h2><p><strong>${passed}/${allTests.length}</strong> tests passed</p>`;
+        results.appendChild(summary);
+
+        if (passed === allTests.length) {
+            const success = document.createElement('div');
+            success.style.marginTop = '20px';
+            success.style.padding = '15px';
+            success.style.background = '#d1ecf1';
+            success.style.borderRadius = '5px';
+            success.innerHTML = '<h3>🎉 All libraries are working!</h3><p>Your Babylon Staking Decoder can now work offline (except for API calls).</p>';
+            results.appendChild(success);
+        }
+    </script>
+</body>
+</html>

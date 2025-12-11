@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECC Library Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #2196F3;
+        }
+        .success {
+            border-left-color: #4CAF50;
+            background: #e8f5e9;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+        .status {
+            font-weight: 600;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ECC Library Initialization Test</h1>
+
+    <div id="test-results"></div>
+
+    <!-- Load libraries in correct order -->
+    <script src="libraries/bitcoinjs-lib.bundle.js"></script>
+    <script src="libraries/secp256k1.bundle.js"></script>
+    <script src="libraries/sha256.bundle.js"></script>
+    <script src="libraries/ecc-lib.bundle.js"></script>
+
+    <script>
+        const results = document.getElementById('test-results');
+
+        function addResult(title, success, details) {
+            const div = document.createElement('div');
+            div.className = `test-box ${success ? 'success' : 'error'}`;
+            div.innerHTML = `
+                <div class="status">${success ? '✅' : '❌'} ${title}</div>
+                <pre>${details}</pre>
+            `;
+            results.appendChild(div);
+        }
+
+        // Test 1: Check if libraries are loaded
+        addResult(
+            'Libraries Loaded',
+            typeof bitcoin !== 'undefined' && typeof ecc !== 'undefined',
+            `bitcoin: ${typeof bitcoin}\necc: ${typeof ecc}\nBuffer: ${typeof Buffer}`
+        );
+
+        // Test 2: Check ECC library methods
+        if (typeof ecc !== 'undefined') {
+            const methods = [
+                'isPoint', 'isXOnlyPoint', 'isPrivate',
+                'pointFromScalar', 'pointCompress', 'pointMultiply',
+                'pointAdd', 'xOnlyPointAddTweak', 'privateAdd',
+                'privateNegate', 'sign', 'signSchnorr', 'verify', 'verifySchnorr'
+            ];
+
+            const availableMethods = methods.filter(m => typeof ecc[m] === 'function');
+
+            addResult(
+                'ECC Methods Available',
+                availableMethods.length === methods.length,
+                `Available: ${availableMethods.length}/${methods.length}\n` +
+                `Methods: ${availableMethods.join(', ')}`
+            );
+        }
+
+        // Test 3: Initialize bitcoinjs-lib with ECC
+        try {
+            if (typeof bitcoin !== 'undefined' && typeof ecc !== 'undefined') {
+                bitcoin.initEccLib(ecc);
+                addResult(
+                    'bitcoinjs-lib ECC Initialization',
+                    true,
+                    'Successfully initialized bitcoinjs-lib with @bitcoinerlab/secp256k1'
+                );
+            } else {
+                throw new Error('Libraries not loaded');
+            }
+        } catch (error) {
+            addResult(
+                'bitcoinjs-lib ECC Initialization',
+                false,
+                `Error: ${error.message}\n${error.stack}`
+            );
+        }
+
+        // Test 4: Create a simple Taproot address
+        try {
+            const testPrivKey = Buffer.from('0101010101010101010101010101010101010101010101010101010101010101', 'hex');
+            const testPubKeyRaw = ecc.pointFromScalar(testPrivKey, true);
+
+            // Convert Uint8Array to Buffer if needed
+            const testPubKey = Buffer.isBuffer(testPubKeyRaw) ? testPubKeyRaw : Buffer.from(testPubKeyRaw);
+
+            const payment = bitcoin.payments.p2tr({
+                internalPubkey: testPubKey.slice(1, 33), // x-only pubkey
+                network: bitcoin.networks.testnet
+            });
+
+            addResult(
+                'Taproot Address Generation',
+                payment.address && payment.address.startsWith('tb1p'),
+                `Address: ${payment.address}\nPubkey: ${testPubKey.toString('hex')}`
+            );
+        } catch (error) {
+            addResult(
+                'Taproot Address Generation',
+                false,
+                `Error: ${error.message}\n${error.stack}`
+            );
+        }
+
+        // Test 5: Create Taproot address with script tree
+        try {
+            const internalPubkey = Buffer.from('50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0', 'hex');
+            const testScript = bitcoin.script.compile([
+                bitcoin.opcodes.OP_1,
+                bitcoin.opcodes.OP_1,
+                bitcoin.opcodes.OP_EQUAL
+            ]);
+
+            const payment = bitcoin.payments.p2tr({
+                internalPubkey: internalPubkey,
+                scriptTree: { output: testScript },
+                network: bitcoin.networks.testnet
+            });
+
+            addResult(
+                'Taproot with Script Tree',
+                payment.address && payment.address.startsWith('tb1p'),
+                `Address: ${payment.address}\nScript: ${testScript.toString('hex')}`
+            );
+        } catch (error) {
+            addResult(
+                'Taproot with Script Tree',
+                false,
+                `Error: ${error.message}\n${error.stack}`
+            );
+        }
+
+        // Test 6: Test offline staking address calculation (simplified)
+        try {
+            const stakerPubkey = Buffer.from('0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798', 'hex');
+            const finalityProviderPubkey = Buffer.from('be2f7942c5dfaa826aec61355ef427fad1095491aa04850c450f812f9b9ca9ed', 'hex');
+            const internalPubkey = Buffer.from('50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0', 'hex');
+
+            const script = bitcoin.script.compile([
+                bitcoin.opcodes.OP_IF,
+                stakerPubkey,
+                bitcoin.opcodes.OP_CHECKSIGVERIFY,
+                bitcoin.script.number.encode(64000),
+                bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
+                bitcoin.opcodes.OP_ELSE,
+                finalityProviderPubkey,
+                bitcoin.opcodes.OP_CHECKSIGVERIFY,
+                bitcoin.opcodes.OP_ENDIF
+            ]);
+
+            const payment = bitcoin.payments.p2tr({
+                internalPubkey: internalPubkey,
+                scriptTree: { output: script },
+                network: bitcoin.networks.testnet
+            });
+
+            addResult(
+                'Babylon Staking Address (Simplified)',
+                payment.address && payment.address.startsWith('tb1p'),
+                `Address: ${payment.address}\nScript length: ${script.length} bytes`
+            );
+        } catch (error) {
+            addResult(
+                'Babylon Staking Address (Simplified)',
+                false,
+                `Error: ${error.message}\n${error.stack}`
+            );
+        }
+    </script>
+</body>
+</html>

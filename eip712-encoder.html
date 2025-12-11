@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EIP-712 Message Encoder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.1/ethers.umd.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        button {
+            background: #0066ff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 15px;
+        }
+        button:hover {
+            background: #0052cc;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            margin-top: 25px;
+        }
+        .output-label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .step-badge {
+            background: #0066ff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .output-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #e1e4e8;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .copy-btn {
+            background: #28a745;
+            padding: 8px 16px;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .copy-btn:hover {
+            background: #218838;
+        }
+        .error {
+            background: #fff5f5;
+            border: 1px solid #fc8181;
+            color: #c53030;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        .info-box {
+            background: #e6f3ff;
+            border-left: 4px solid #0066ff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #fafbfc;
+            border-radius: 6px;
+            border: 1px solid #e1e4e8;
+        }
+        .explanation {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EIP-712 Message Encoder</h1>
+        <p class="description">
+            Shows the complete encoding process from typed data to hash, including the intermediate ABI-encoded bytes.
+        </p>
+
+        <div class="info-box">
+            <strong>Your 1inch Order Data is Pre-loaded!</strong><br>
+            Click "Encode to Hex" to see the full encoding process.
+        </div>
+
+        <label for="input" style="font-weight: 600; display: block; margin-bottom: 8px;">
+            EIP-712 Typed Data (JSON):
+        </label>
+        <textarea id="input" placeholder='Paste your EIP-712 typed data here...'></textarea>
+        
+        <button onclick="encodeData()">Encode to Hex</button>
+
+        <div id="output" class="output" style="display: none;">
+            <div class="section">
+                <div class="output-label">
+                    <span class="step-badge">STEP 1</span>
+                    Type Hash (Order)
+                </div>
+                <div class="output-box" id="typeHash"></div>
+                <div class="explanation">This is keccak256 of the type definition string</div>
+                <button class="copy-btn" onclick="copyToClipboard('typeHash')">Copy</button>
+            </div>
+
+            <div class="section">
+                <div class="output-label">
+                    <span class="step-badge">STEP 2</span>
+                    ABI-Encoded Message Data (RAW HEX)
+                </div>
+                <div class="output-box" id="encodedMessage"></div>
+                <div class="explanation">This is the ABI-encoded representation of your order - still decodable!</div>
+                <button class="copy-btn" onclick="copyToClipboard('encodedMessage')">Copy ABI-Encoded Data</button>
+            </div>
+
+            <div class="section">
+                <div class="output-label">
+                    <span class="step-badge">STEP 3</span>
+                    Message Hash (Struct Hash)
+                </div>
+                <div class="output-box" id="structHash"></div>
+                <div class="explanation">keccak256(typeHash + encodedMessage)</div>
+                <button class="copy-btn" onclick="copyToClipboard('structHash')">Copy</button>
+            </div>
+
+            <div class="section">
+                <div class="output-label">
+                    <span class="step-badge">STEP 4</span>
+                    Domain Separator
+                </div>
+                <div class="output-box" id="domainHash"></div>
+                <div class="explanation">Hash of the domain (chain, contract, etc.)</div>
+                <button class="copy-btn" onclick="copyToClipboard('domainHash')">Copy</button>
+            </div>
+
+            <div class="section" style="border: 2px solid #28a745;">
+                <div class="output-label">
+                    <span class="step-badge" style="background: #28a745;">FINAL</span>
+                    EIP-712 Signature Hash
+                </div>
+                <div class="output-box" id="finalHash"></div>
+                <div class="explanation">keccak256("\x19\x01" + domainSeparator + structHash) - This is what gets signed</div>
+                <button class="copy-btn" onclick="copyToClipboard('finalHash')">Copy Final Hash</button>
+            </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Pre-load the user's 1inch order data
+        document.getElementById('input').value = JSON.stringify({
+            "types": {
+                "Order": [
+                    {"name": "salt", "type": "uint256"},
+                    {"name": "maker", "type": "address"},
+                    {"name": "receiver", "type": "address"},
+                    {"name": "makerAsset", "type": "address"},
+                    {"name": "takerAsset", "type": "address"},
+                    {"name": "makingAmount", "type": "uint256"},
+                    {"name": "takingAmount", "type": "uint256"},
+                    {"name": "makerTraits", "type": "uint256"}
+                ],
+                "EIP712Domain": [
+                    {"name": "name", "type": "string"},
+                    {"name": "version", "type": "string"},
+                    {"name": "chainId", "type": "uint256"},
+                    {"name": "verifyingContract", "type": "address"}
+                ]
+            },
+            "domain": {
+                "name": "1inch Aggregation Router",
+                "version": "6",
+                "chainId": "1",
+                "verifyingContract": "0x111111125421ca6dc452d289314280a0f8842a65"
+            },
+            "primaryType": "Order",
+            "message": {
+                "salt": "33701748007743534767008945530250415042836576479166588700136013131346056362315",
+                "maker": "0xde9eb4879e27447a92721acf1c826d72a688cf0e",
+                "receiver": "0x0000000000000000000000000000000000000000",
+                "makerAsset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "takerAsset": "0x672fdba7055bddfa8fd6bd45b1455ce5eb97f499",
+                "makingAmount": "1111000000",
+                "takingAmount": "367478665635653233305417",
+                "makerTraits": "62419173104490761595518734106350460423627517376402859245549101511777198276608"
+            }
+        }, null, 2);
+
+        async function encodeData() {
+            const errorDiv = document.getElementById('error');
+            const outputDiv = document.getElementById('output');
+            
+            errorDiv.style.display = 'none';
+            outputDiv.style.display = 'none';
+
+            try {
+                const input = document.getElementById('input').value;
+                const data = JSON.parse(input);
+
+                // Validate required fields
+                if (!data.types || !data.domain || !data.primaryType || !data.message) {
+                    throw new Error('Invalid EIP-712 data structure. Must include types, domain, primaryType, and message.');
+                }
+
+                const domain = data.domain;
+                const types = {};
+                
+                // Copy types excluding EIP712Domain
+                for (const [key, value] of Object.entries(data.types)) {
+                    if (key !== 'EIP712Domain') {
+                        types[key] = value;
+                    }
+                }
+
+                // Get the primary type
+                const primaryType = data.primaryType;
+                const message = data.message;
+
+                // Step 1: Compute type hash
+                const encoder = ethers.TypedDataEncoder.from(types);
+                const typeString = encoder.encodeType(primaryType);
+                const typeHash = ethers.keccak256(ethers.toUtf8Bytes(typeString));
+                
+                // Step 2: ABI-encode the message
+                const messageTypes = types[primaryType].map(field => field.type);
+                const messageValues = types[primaryType].map(field => message[field.name]);
+                const encodedMessage = ethers.AbiCoder.defaultAbiCoder().encode(messageTypes, messageValues);
+
+                // Step 3: Compute struct hash (typeHash + encodedMessage)
+                const structHash = encoder.hash(message);
+
+                // Step 4: Compute domain separator
+                const domainHash = ethers.TypedDataEncoder.hashDomain(domain);
+
+                // Final: Compute EIP-712 hash
+                const finalHash = ethers.TypedDataEncoder.hash(domain, types, message);
+
+                // Display results
+                document.getElementById('typeHash').textContent = typeHash;
+                document.getElementById('encodedMessage').textContent = encodedMessage;
+                document.getElementById('structHash').textContent = structHash;
+                document.getElementById('domainHash').textContent = domainHash;
+                document.getElementById('finalHash').textContent = finalHash;
+
+                outputDiv.style.display = 'block';
+
+            } catch (e) {
+                errorDiv.textContent = 'Error: ' + e.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        // Auto-encode on page load since data is pre-filled
+        window.addEventListener('load', () => {
+            setTimeout(encodeData, 100);
+        });
+    </script>
+</body>
+</html>

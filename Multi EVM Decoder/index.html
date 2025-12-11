@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVM Transaction Decoder</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="settings-btn" onclick="openSettings()" title="Settings">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+            </button>
+            <button class="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" stroke="white" stroke-width="2" />
+                    <line x1="12" y1="21" x2="12" y2="23" stroke="white" stroke-width="2" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="white" stroke-width="2" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="white" stroke-width="2" />
+                    <line x1="1" y1="12" x2="3" y2="12" stroke="white" stroke-width="2" />
+                    <line x1="21" y1="12" x2="23" y2="12" stroke="white" stroke-width="2" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="white" stroke-width="2" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="white" stroke-width="2" />
+                </svg>
+                <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+            </button>
+            <h1>EVM Transaction Decoder</h1>
+            <p>Decode smart contract transactions across EVM chains</p>
+            <span class="version-badge">v0.2.3</span>
+        </div>
+
+        <div class="content">
+            <div class="chain-selector">
+                <label for="chain-select">Select Blockchain:</label>
+                <select id="chain-select" onchange="onChainChange()">
+                    <option value="ethereum">Ethereum Mainnet</option>
+                    <option value="arbitrum">Arbitrum One</option>
+                    <option value="optimism">Optimism</option>
+                    <option value="base">Base</option>
+                    <option value="polygon">Polygon</option>
+                    <option value="avalanche">Avalanche C-Chain</option>
+                    <option value="bsc">BNB Smart Chain</option>
+                    <option value="blast">Blast</option>
+                    <option value="energywebchain">Energy Web Chain</option>
+                    <option value="scroll">Scroll</option>
+                    <option value="taiko">Taiko</option>
+                    <option value="zksync">zkSync Era</option>
+                </select>
+            </div>
+
+            <div class="mode-selector">
+                <button class="mode-btn active" onclick="switchMode('auto')">Automatic Mode</button>
+                <button class="mode-btn" onclick="switchMode('manual')">Manual Mode</button>
+            </div>
+
+            <div id="manual-mode" class="input-section">
+                <div class="form-group">
+                    <label>Transaction Data (Hex)</label>
+                    <textarea id="manual-tx-data" placeholder="0x095ea7b3000000000000000000000000..."></textarea>
+                    <div class="small-text">Paste the hex data from your wallet</div>
+                </div>
+                <div class="form-group">
+                    <label>Contract ABI (JSON) - Optional</label>
+                    <textarea id="manual-abi" placeholder='[{"inputs":[],"name":"approve"}]'></textarea>
+                    <div class="small-text">Leave empty to use best-effort heuristic decoding</div>
+                </div>
+                <div class="form-group">
+                    <label>Value (wei) <span style="color:#999;">(optional)</span></label>
+                    <input type="text" id="manual-tx-value" placeholder="0">
+                    <div class="small-text">Native value sent with the call. Needed to show native outflow impact.</div>
+                </div>
+                <details class="optional-section" id="manual-optional">
+                    <summary>Optional: Provide transaction envelope fields</summary>
+                    <div class="small-text optional-hint">
+                        Supplying all fields below allows the decoder to reconstruct the exact transaction hash that a
+                        hardware wallet (Ledger, etc.) displays before signing.
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Transaction Type</label>
+                            <select id="manual-tx-type">
+                                <option value="eip1559" selected>EIP-1559 (Type 0x02)</option>
+                                <option value="legacy">Legacy (EIP-155)</option>
+                            </select>
+                            <div class="small-text">Select the signing mode used by your wallet.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Chain ID</label>
+                            <input type="text" id="manual-tx-chainid" placeholder="1">
+                            <div class="small-text">Decimal or hex (e.g., 1 or 0x1).</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nonce</label>
+                            <input type="text" id="manual-tx-nonce" placeholder="108">
+                            <div class="small-text">Account nonce for this transaction.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Gas Limit</label>
+                            <input type="text" id="manual-tx-gaslimit" placeholder="210000">
+                            <div class="small-text">Total gas units allocated for the call.</div>
+                        </div>
+                        <div class="form-group manual-legacy-field">
+                            <label>Gas Price (wei)</label>
+                            <input type="text" id="manual-tx-gasprice" placeholder="35000000000">
+                            <div class="small-text">Required for Legacy transactions.</div>
+                        </div>
+                        <div class="form-group manual-eip1559-field">
+                            <label>Max Fee Per Gas (wei)</label>
+                            <input type="text" id="manual-tx-maxfee" placeholder="50000000000">
+                            <div class="small-text">Required for EIP-1559 transactions.</div>
+                        </div>
+                        <div class="form-group manual-eip1559-field">
+                            <label>Max Priority Fee Per Gas (wei)</label>
+                            <input type="text" id="manual-tx-maxpriority" placeholder="2000000000">
+                            <div class="small-text">Tip paid to validators (EIP-1559).</div>
+                        </div>
+                        <div class="form-group">
+                            <label>To / Contract Address</label>
+                            <input type="text" id="manual-tx-to" placeholder="0x...">
+                            <div class="small-text">Destination address. Required to compute the hash when decoding
+                                manually.</div>
+                </div>
+            </div>
+        </details>
+        <div class="form-group">
+            <label>Your Wallet Address (for balance/allowance impact)</label>
+            <input type="text" id="manual-wallet-address" placeholder="0x... (optional)">
+            <div class="small-text">Used to show before/after balances and allowances. Leave empty to skip.</div>
+        </div>
+        <div class="form-group toggle-row">
+            <label class="checkbox-label">
+                <input type="checkbox" id="simulate-toggle-manual" checked>
+                Simulate effects (eth_call)
+            </label>
+                    <div class="small-text">Dry-run this call against the current RPC to catch reverts and estimate gas.</div>
+                </div>
+                <button class="decode-btn" onclick="decodeManual()">Decode Transaction</button>
+            </div>
+
+            <div id="auto-mode" class="input-section active">
+                <div class="form-group">
+                    <label>Etherscan API Key (v2)</label>
+                    <input type="text" id="api-key" placeholder="Your Etherscan API key">
+                    <div class="small-text" id="explorer-hint">One API key works for all supported chains - saved
+                        locally</div>
+                    <div id="api-key-status"></div>
+                </div>
+                <div class="form-group">
+                    <label>Contract Address</label>
+                    <input type="text" id="contract-address" placeholder="0x...">
+                </div>
+                <div class="form-group">
+                    <label>Transaction Data (Hex)</label>
+                    <textarea id="auto-tx-data" placeholder="0x095ea7b3000000000000000000000000..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Value (wei) <span style="color:#999;">(optional)</span></label>
+                    <input type="text" id="auto-tx-value" placeholder="0">
+                    <div class="small-text">Native value sent with the call. Needed to show native outflow impact.</div>
+                </div>
+                <details class="optional-section" id="auto-optional">
+                    <summary>Optional: Provide transaction envelope fields</summary>
+                    <div class="small-text optional-hint">
+                        Fill in every field below if you want the decoder to reconstruct the full transaction hash
+                        exactly as shown on a hardware wallet.
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Transaction Type</label>
+                            <select id="auto-tx-type">
+                                <option value="eip1559" selected>EIP-1559 (Type 0x02)</option>
+                                <option value="legacy">Legacy (EIP-155)</option>
+                            </select>
+                            <div class="small-text">Most modern wallets default to EIP-1559.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Chain ID</label>
+                            <input type="text" id="auto-tx-chainid" placeholder="1">
+                            <div class="small-text">Use decimal or hex notation.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nonce</label>
+                            <input type="text" id="auto-tx-nonce" placeholder="108">
+                            <div class="small-text">Account nonce for the signer.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Gas Limit</label>
+                            <input type="text" id="auto-tx-gaslimit" placeholder="210000">
+                            <div class="small-text">Total gas units allocated.</div>
+                        </div>
+                        <div class="form-group auto-legacy-field">
+                            <label>Gas Price (wei)</label>
+                            <input type="text" id="auto-tx-gasprice" placeholder="35000000000">
+                            <div class="small-text">Only required for Legacy transactions.</div>
+                        </div>
+                        <div class="form-group auto-eip1559-field">
+                            <label>Max Fee Per Gas (wei)</label>
+                            <input type="text" id="auto-tx-maxfee" placeholder="50000000000">
+                            <div class="small-text">Required for EIP-1559 transactions.</div>
+                        </div>
+                        <div class="form-group auto-eip1559-field">
+                            <label>Max Priority Fee Per Gas (wei)</label>
+                            <input type="text" id="auto-tx-maxpriority" placeholder="2000000000">
+                            <div class="small-text">EIP-1559 tip to validators.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Override To Address (optional)</label>
+                            <input type="text" id="auto-tx-to" placeholder="Defaults to contract address">
+                            <div class="small-text">Leave blank to use the contract address entered above.</div>
+                        </div>
+            </div>
+        </details>
+        <div class="form-group">
+            <label>Your Wallet Address (for balance/allowance impact)</label>
+            <input type="text" id="auto-wallet-address" placeholder="0x... (optional)">
+            <div class="small-text">Used to show before/after balances and allowances. Leave empty to skip.</div>
+        </div>
+        <div class="form-group toggle-row">
+            <label class="checkbox-label">
+                <input type="checkbox" id="simulate-toggle-auto" checked>
+                Simulate effects (eth_call)
+            </label>
+                    <div class="small-text">Dry-run this call against the current RPC to catch reverts and estimate gas.</div>
+                </div>
+                <button class="decode-btn" onclick="decodeAuto()">Decode Transaction</button>
+            </div>
+
+            <div id="decoder-status" class="status-banner" style="display: none;"></div>
+
+            <div id="output" class="output-section">
+                <div class="output-box">
+                    <div id="output-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="copyright">Copyright © 2025 by Yves Holenstein</div>
+    </div>
+
+    <div id="settings-modal" class="settings-modal" onclick="if(event.target === this) closeSettings()">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2>Settings</h2>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+            <div class="settings-group">
+                <h3>Display Options</h3>
+                <div class="toggle-switch">
+                    <label for="format-amounts">Show Formatted Token Amounts</label>
+                    <label class="switch"><input type="checkbox" id="format-amounts" checked
+                            onchange="saveSettings()"><span class="slider"></span></label>
+                </div>
+                <div class="toggle-switch">
+                    <label for="show-usd">Show USD Prices</label>
+                    <label class="switch"><input type="checkbox" id="show-usd" onchange="saveSettings()"><span
+                            class="slider"></span></label>
+                </div>
+            </div>
+            <div class="settings-group">
+                <h3>RPC Overrides</h3>
+                <label for="custom-rpc-url">Custom RPC for <span id="custom-rpc-chain">selected chain</span></label>
+                <input type="text" id="custom-rpc-url" placeholder="https://your-rpc.endpoint"
+                    onchange="saveSettings()">
+                <div class="small-text">Leave blank to use the default RPC endpoint shipped with the decoder.</div>
+            </div>
+            <div class="settings-group">
+                <h3>Address Book</h3>
+                <div class="address-book-container">
+                    <div class="address-book-list" id="address-book-list">
+                        <!-- Entries injected by JS -->
+                        <div class="empty-state">No saved addresses</div>
+                    </div>
+                    <div class="address-book-add">
+                        <input type="text" id="new-addr-address" placeholder="0x..." class="addr-input">
+                        <input type="text" id="new-addr-label" placeholder="Label (e.g. Coinbase)" class="label-input">
+                        <button onclick="handleAddAddress()" class="add-btn">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-group">
+                <div style="padding: 15px; background: #f8f9fa; border-radius: 10px; font-size: 0.9em; color: #666;">
+                    <p style="margin: 0;">Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, BSC, Blast, Scroll,
+                        zkSync Era</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .address-book-container {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .address-book-list {
+            max-height: 150px;
+            overflow-y: auto;
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .address-book-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9em;
+        }
+
+        .address-book-entry:last-child {
+            border-bottom: none;
+        }
+
+        .address-book-add {
+            display: flex;
+            padding: 8px;
+            gap: 5px;
+            background: #fff;
+        }
+
+        .addr-input {
+            flex: 2;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .label-input {
+            flex: 1;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .add-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 30px;
+            cursor: pointer;
+        }
+
+        .remove-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .empty-state {
+            padding: 10px;
+            text-align: center;
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Trusted Label Styles */
+        .trusted-label {
+            display: inline-flex;
+            align-items: center;
+            background: #e6fffa;
+            color: #00b894;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            margin-left: 8px;
+            border: 1px solid #00b894;
+        }
+
+        .trusted-label i {
+            margin-right: 4px;
+        }
+
+        .dark-mode .trusted-label {
+            background: #002b20;
+        }
+
+        .txn-summary {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .dark-mode .txn-summary {
+            background: #0d2b45;
+            border-left-color: #64b5f6;
+        }
+
+        .txn-summary h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.1em;
+            color: #1976d2;
+        }
+
+        .dark-mode .txn-summary h3 {
+            color: #64b5f6;
+        }
+
+        .txn-summary p {
+            margin: 0;
+            font-size: 1.05em;
+            line-height: 1.4;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="config.js"></script>
+    <script src="decoder.js"></script>
+    <script src="ui.js"></script>
+</body>
+
+</html>
