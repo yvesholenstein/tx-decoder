@@ -73,7 +73,12 @@
                     No Etherscan API key set. Add one in Settings to enable explorer-based decoding.
                 </div>
                 <div class="form-group">
-                    <label>Transaction Data (Hex)</label>
+                    <label>Your Wallet Address (for balance/allowance impact) <span style="color:#999;font-style: italic;">(optional)</span></label>
+                    <input type="text" id="manual-wallet-address" placeholder="0x... (optional)">
+                    <div class="small-text">Used to show before/after balances and allowances. Leave empty to skip.</div>
+                </div>
+                <div class="form-group">
+                    <label>Transaction Data (Hex)*</label>
                     <textarea id="manual-tx-data" placeholder="0x095ea7b3000000000000000000000000..."></textarea>
                     <div class="small-text">Paste the hex data from your wallet</div>
                 </div>
@@ -84,7 +89,7 @@
                 </div>
                 <div class="form-group">
                     <div class="value-label-row">
-                        <label>Value (wei) <span style="color:#999;">(optional)</span></label>
+                        <label>Value (wei) <span style="color:#999;font-style: italic;">(optional)</span></label>
                         <div class="wei-helper">
                             <input type="text" id="manual-native-amount" class="compact-input" placeholder="0.01">
                             <button type="button" class="pill-btn" onclick="convertToWei('manual')">Convert to wei</button>
@@ -93,72 +98,74 @@
                     <input type="text" id="manual-tx-value" placeholder="0">
                     <div class="small-text">Native value sent with the call. Quick convert lets you enter whole/native units without counting zeros.</div>
                 </div>
-                <details class="optional-section" id="manual-optional">
-                    <summary>Optional: Provide transaction envelope fields</summary>
-                    <div class="small-text optional-hint">
-                        Supplying all fields below allows the decoder to reconstruct the exact transaction hash that a
-                        hardware wallet (Ledger, etc.) displays before signing.
-                    </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Transaction Type</label>
-                            <select id="manual-tx-type">
-                                <option value="eip1559" selected>EIP-1559 (Type 0x02)</option>
-                                <option value="legacy">Legacy (EIP-155)</option>
-                            </select>
-                            <div class="small-text">Select the signing mode used by your wallet.</div>
-                        </div>
-                        <div class="form-group">
-                            <label>Chain ID</label>
-                            <input type="text" id="manual-tx-chainid" placeholder="1">
-                            <div class="small-text">Decimal or hex (e.g., 1 or 0x1).</div>
-                        </div>
-                        <div class="form-group">
-                            <label>Nonce</label>
-                            <input type="text" id="manual-tx-nonce" placeholder="108">
-                            <div class="small-text">Account nonce for this transaction.</div>
-                        </div>
-                        <div class="form-group">
-                            <label>Gas Limit</label>
-                            <input type="text" id="manual-tx-gaslimit" placeholder="210000">
-                            <div class="small-text">Total gas units allocated for the call.</div>
-                        </div>
-                        <div class="form-group manual-legacy-field">
-                            <label>Gas Price (wei)</label>
-                            <input type="text" id="manual-tx-gasprice" placeholder="35000000000">
-                            <div class="small-text">Required for Legacy transactions.</div>
-                        </div>
-                        <div class="form-group manual-eip1559-field">
-                            <label>Max Fee Per Gas (wei)</label>
-                            <input type="text" id="manual-tx-maxfee" placeholder="50000000000">
-                            <div class="small-text">Required for EIP-1559 transactions.</div>
-                        </div>
-                        <div class="form-group manual-eip1559-field">
-                            <label>Max Priority Fee Per Gas (wei)</label>
-                            <input type="text" id="manual-tx-maxpriority" placeholder="2000000000">
-                            <div class="small-text">Tip paid to validators (EIP-1559).</div>
-                        </div>
-                        <div class="form-group">
-                            <label>To / Contract Address</label>
-                            <input type="text" id="manual-tx-to" placeholder="0x...">
-                            <div class="small-text">Destination address. Required to compute the hash when decoding
-                                manually.</div>
-                </div>
-            </div>
-        </details>
-        <div class="form-group">
-            <label>Your Wallet Address (for balance/allowance impact)</label>
-            <input type="text" id="manual-wallet-address" placeholder="0x... (optional)">
-            <div class="small-text">Used to show before/after balances and allowances. Leave empty to skip.</div>
-        </div>
-        <div class="form-group toggle-row">
-            <label class="checkbox-label">
-                <input type="checkbox" id="simulate-toggle-manual" checked>
-                Simulate effects (eth_call)
-            </label>
+                <div class="form-group toggle-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="simulate-toggle-manual" checked>
+                        Simulate effects (eth_call)
+                    </label>
                     <div class="small-text">Dry-run this call against the current RPC to catch reverts and estimate gas.</div>
                 </div>
-                <button class="decode-btn" onclick="decodeManual()">Decode Transaction</button>
+                <div class="form-group">
+                    <details class="optional-section" id="manual-optional">
+                        <summary>Optional: Provide transaction envelope fields</summary>
+                        <div class="small-text optional-hint">
+                            Supplying all fields below allows the decoder to reconstruct the exact transaction hash that a
+                            hardware wallet (Ledger, etc.) displays before signing.
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Transaction Type</label>
+                                <select id="manual-tx-type">
+                                    <option value="eip1559" selected>EIP-1559 (Type 0x02)</option>
+                                    <option value="legacy">Legacy (EIP-155)</option>
+                                </select>
+                                <div class="small-text">Select the signing mode used by your wallet.</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Chain ID</label>
+                                <input type="text" id="manual-tx-chainid" placeholder="1">
+                                <div class="small-text">Decimal or hex (e.g., 1 or 0x1).</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Nonce</label>
+                                <input type="text" id="manual-tx-nonce" placeholder="108">
+                                <div class="small-text">Account nonce for this transaction.</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Gas Limit</label>
+                                <input type="text" id="manual-tx-gaslimit" placeholder="210000">
+                                <div class="small-text">Total gas units allocated for the call.</div>
+                            </div>
+                            <div class="form-group manual-legacy-field">
+                                <label>Gas Price (wei)</label>
+                                <input type="text" id="manual-tx-gasprice" placeholder="35000000000">
+                                <div class="small-text">Required for Legacy transactions.</div>
+                            </div>
+                            <div class="form-group manual-eip1559-field">
+                                <label>Max Fee Per Gas (wei)</label>
+                                <input type="text" id="manual-tx-maxfee" placeholder="50000000000">
+                                <div class="small-text">Required for EIP-1559 transactions.</div>
+                            </div>
+                            <div class="form-group manual-eip1559-field">
+                                <label>Max Priority Fee Per Gas (wei)</label>
+                                <input type="text" id="manual-tx-maxpriority" placeholder="2000000000">
+                                <div class="small-text">Tip paid to validators (EIP-1559).</div>
+                            </div>
+                            <div class="form-group">
+                                <label>To / Contract Address</label>
+                                <input type="text" id="manual-tx-to" placeholder="0x...">
+                                <div class="small-text">Destination address. Required to compute the hash when decoding
+                                    manually.</div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+                <div class="form-group">
+                    <button class="decode-btn" onclick="decodeManual()">Decode Transaction</button>
+                </div>
+                <div class="form-group">
+                    <div class="small-text">*) Mandatory fields</div>
+                </div>
             </div>
 
             <div id="auto-mode" class="input-section active">
@@ -166,16 +173,21 @@
                     No Etherscan API key set. Add one in Settings to enable explorer-based decoding.
                 </div>
                 <div class="form-group">
-                    <label>Contract Address</label>
+                    <label>Contract Address*</label>
                     <input type="text" id="contract-address" placeholder="0x...">
                 </div>
                 <div class="form-group">
-                    <label>Transaction Data (Hex)</label>
+                    <label>Your Wallet Address (for balance/allowance impact) <span style="color:#999;font-style: italic;">(optional)</span></label>
+                    <input type="text" id="auto-wallet-address" placeholder="0x... (optional)">
+                    <div class="small-text">Used to show before/after balances and allowances. Leave empty to skip.</div>
+                </div>
+                <div class="form-group">
+                    <label>Transaction Data (Hex)*</label>
                     <textarea id="auto-tx-data" placeholder="0x095ea7b3000000000000000000000000..."></textarea>
                 </div>
                 <div class="form-group">
                     <div class="value-label-row">
-                        <label>Value (wei) <span style="color:#999;">(optional)</span></label>
+                        <label>Value (wei) <span style="color:#999;font-style: italic;">(optional)</span></label>
                         <div class="wei-helper">
                             <input type="text" id="auto-native-amount" class="compact-input" placeholder="0.01">
                             <button type="button" class="pill-btn" onclick="convertToWei('auto')">Convert to wei</button>
@@ -184,71 +196,73 @@
                     <input type="text" id="auto-tx-value" placeholder="0">
                     <div class="small-text">Native value sent with the call. Quick convert lets you enter whole/native units without counting zeros.</div>
                 </div>
-                <details class="optional-section" id="auto-optional">
-                    <summary>Optional: Provide transaction envelope fields</summary>
-                    <div class="small-text optional-hint">
-                        Fill in every field below if you want the decoder to reconstruct the full transaction hash
-                        exactly as shown on a hardware wallet.
-                    </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Transaction Type</label>
-                            <select id="auto-tx-type">
-                                <option value="eip1559" selected>EIP-1559 (Type 0x02)</option>
-                                <option value="legacy">Legacy (EIP-155)</option>
-                            </select>
-                            <div class="small-text">Most modern wallets default to EIP-1559.</div>
-                        </div>
-                        <div class="form-group">
-                            <label>Chain ID</label>
-                            <input type="text" id="auto-tx-chainid" placeholder="1">
-                            <div class="small-text">Use decimal or hex notation.</div>
-                        </div>
-                        <div class="form-group">
-                            <label>Nonce</label>
-                            <input type="text" id="auto-tx-nonce" placeholder="108">
-                            <div class="small-text">Account nonce for the signer.</div>
-                        </div>
-                        <div class="form-group">
-                            <label>Gas Limit</label>
-                            <input type="text" id="auto-tx-gaslimit" placeholder="210000">
-                            <div class="small-text">Total gas units allocated.</div>
-                        </div>
-                        <div class="form-group auto-legacy-field">
-                            <label>Gas Price (wei)</label>
-                            <input type="text" id="auto-tx-gasprice" placeholder="35000000000">
-                            <div class="small-text">Only required for Legacy transactions.</div>
-                        </div>
-                        <div class="form-group auto-eip1559-field">
-                            <label>Max Fee Per Gas (wei)</label>
-                            <input type="text" id="auto-tx-maxfee" placeholder="50000000000">
-                            <div class="small-text">Required for EIP-1559 transactions.</div>
-                        </div>
-                        <div class="form-group auto-eip1559-field">
-                            <label>Max Priority Fee Per Gas (wei)</label>
-                            <input type="text" id="auto-tx-maxpriority" placeholder="2000000000">
-                            <div class="small-text">EIP-1559 tip to validators.</div>
-                        </div>
-                        <div class="form-group">
-                            <label>Override To Address (optional)</label>
-                            <input type="text" id="auto-tx-to" placeholder="Defaults to contract address">
-                            <div class="small-text">Leave blank to use the contract address entered above.</div>
-                        </div>
-            </div>
-        </details>
-        <div class="form-group">
-            <label>Your Wallet Address (for balance/allowance impact)</label>
-            <input type="text" id="auto-wallet-address" placeholder="0x... (optional)">
-            <div class="small-text">Used to show before/after balances and allowances. Leave empty to skip.</div>
-        </div>
-        <div class="form-group toggle-row">
-            <label class="checkbox-label">
-                <input type="checkbox" id="simulate-toggle-auto" checked>
-                Simulate effects (eth_call)
-            </label>
+                <div class="form-group toggle-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="simulate-toggle-auto" checked>
+                        Simulate effects (eth_call)
+                    </label>
                     <div class="small-text">Dry-run this call against the current RPC to catch reverts and estimate gas.</div>
                 </div>
-                <button class="decode-btn" onclick="decodeAuto()">Decode Transaction</button>
+                <div class="form-group">
+                    <details class="optional-section" id="auto-optional">
+                        <summary>Optional: Provide transaction envelope fields</summary>
+                        <div class="small-text optional-hint">
+                            Fill in every field below if you want the decoder to reconstruct the full transaction hash
+                            exactly as shown on a hardware wallet.
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Transaction Type</label>
+                                <select id="auto-tx-type">
+                                    <option value="eip1559" selected>EIP-1559 (Type 0x02)</option>
+                                    <option value="legacy">Legacy (EIP-155)</option>
+                                </select>
+                                <div class="small-text">Most modern wallets default to EIP-1559.</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Chain ID</label>
+                                <input type="text" id="auto-tx-chainid" placeholder="1">
+                                <div class="small-text">Use decimal or hex notation.</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Nonce</label>
+                                <input type="text" id="auto-tx-nonce" placeholder="108">
+                                <div class="small-text">Account nonce for the signer.</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Gas Limit</label>
+                                <input type="text" id="auto-tx-gaslimit" placeholder="210000">
+                                <div class="small-text">Total gas units allocated.</div>
+                            </div>
+                            <div class="form-group auto-legacy-field">
+                                <label>Gas Price (wei)</label>
+                                <input type="text" id="auto-tx-gasprice" placeholder="35000000000">
+                                <div class="small-text">Only required for Legacy transactions.</div>
+                            </div>
+                            <div class="form-group auto-eip1559-field">
+                                <label>Max Fee Per Gas (wei)</label>
+                                <input type="text" id="auto-tx-maxfee" placeholder="50000000000">
+                                <div class="small-text">Required for EIP-1559 transactions.</div>
+                            </div>
+                            <div class="form-group auto-eip1559-field">
+                                <label>Max Priority Fee Per Gas (wei)</label>
+                                <input type="text" id="auto-tx-maxpriority" placeholder="2000000000">
+                                <div class="small-text">EIP-1559 tip to validators.</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Override To Address (optional)</label>
+                                <input type="text" id="auto-tx-to" placeholder="Defaults to contract address">
+                                <div class="small-text">Leave blank to use the contract address entered above.</div>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+                <div class="form-group">
+                    <button class="decode-btn" onclick="decodeAuto()">Decode Transaction</button>
+                </div>
+                <div class="form-group">
+                    <div class="small-text">*) Mandatory fields</div>
+                </div>
             </div>
 
             <div id="decoder-status" class="status-banner" style="display: none;"></div>

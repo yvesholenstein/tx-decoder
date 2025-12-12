@@ -519,6 +519,12 @@ body.dark-mode .helper-text {
     color: #721c24;
 }
 
+body.dark-mode .status-banner.success {
+    background: #1f3b2a;
+    border-color: #2f7a43;
+    color: #b6f2c9;
+}
+
 .api-key-saved {
     color: #28a745;
     font-size: 0.85em;
