@@ -227,12 +227,21 @@ const KNOWN_CONTRACTS = {
         '0xe592427a0aece92de3edee1f18e0157c05861564': { name: 'Uniswap V3 SwapRouter', category: 'dex/router', source: 'builtin' },
         '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' },
         '0x1111111254eeb25477b68fb85ed929f73a960582': { name: '1inch Aggregation Router v5', category: 'dex/router', source: 'builtin' },
+        '0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f': { name: 'SushiSwap Router', category: 'dex/router', source: 'builtin' },
+        '0x881d40237659c251811cec9c364ef91dc08d300c': { name: 'Paraswap Augustus v4', category: 'dex/router', source: 'builtin' },
+        '0x11111112542d85b3ef69ae05771c2dccff4faa26': { name: 'CowSwap Settlement', category: 'aggregator', source: 'builtin' },
+        '0xc36442b4a4522e871399cd717abdd847ab11fe88': { name: 'Uniswap V3 NonfungiblePositionManager', category: 'dex/liquidity', source: 'builtin' },
+        '0x000000000022d473030f116ddee9f6b43ac78ba3': { name: 'Permit2 (Uniswap)', category: 'auth/permit', source: 'builtin' },
         '0xdef1c0ded9bec7f1a1670819833240f027b25eff': { name: '0x Exchange Proxy', category: 'dex/router', source: 'builtin' },
         '0x25ace71c97b33cc4729cf772ae268934f7ab5fa1': { name: 'Optimism L1 Standard Bridge', category: 'bridge', source: 'builtin' },
         '0xa0c68c638235ee32657e8f720a23cec1bfc77c77': { name: 'Polygon PoS RootChainManager (L1 Bridge)', category: 'bridge', source: 'builtin' },
         '0x8d3e809fbd258083a5ba004a527159da535c8aba': { name: 'Base L1 Standard Bridge', category: 'bridge', source: 'builtin' },
         '0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f': { name: 'Arbitrum Delayed Inbox (L1 Forwarder)', category: 'bridge', source: 'builtin' },
-        '0xcee284f754e854890e311e3280b767f80797180d': { name: 'Arbitrum L1 Gateway Router (ERC20 Bridge)', category: 'bridge', source: 'builtin' }
+        '0xcee284f754e854890e311e3280b767f80797180d': { name: 'Arbitrum L1 Gateway Router (ERC20 Bridge)', category: 'bridge', source: 'builtin' },
+        '0x5e4e65926ba27467555eb562121fac00d24e9dd2': { name: 'Optimism L1 Message Passer', category: 'bridge', source: 'builtin' },
+        '0xf55041e37e12cd407ad00ce2910b8269b01263b9': { name: 'Polygon PoS Checkpoint Manager', category: 'bridge', source: 'builtin' },
+        '0x4f3aff3a747fcade12598081e80c6605a8be192f': { name: 'Aave V2 LendingPool', category: 'lending', source: 'builtin' },
+        '0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9': { name: 'Aave V2 Pool', category: 'lending', source: 'builtin' }
     },
     arbitrum: {
         '0x1111111254760f7ab3f16433eea9304126dcf199': { name: '1inch Aggregation Router v5 (Arbitrum)', category: 'dex/router', source: 'builtin' },
@@ -241,22 +250,38 @@ const KNOWN_CONTRACTS = {
         '0x794a61358d6845594f94dc1db02a252b5b4814ad': { name: 'Aave V3 Pool', category: 'lending', source: 'builtin' },
         '0x4c6f947ae67f572afa4ae0730947de7c874f95ef': { name: 'Arbitrum L2 Gateway Router (ERC20)', category: 'bridge', source: 'builtin' },
         '0x096760f208390250649e3e8763348e78318f1c23': { name: 'Arbitrum Standard ERC20 Gateway (L2)', category: 'bridge', source: 'builtin' },
-        '0xa52b3355b6e42e38ae8ec3f5e4df9abdc523e843': { name: 'Arbitrum WETH/ETH Gateway (L2)', category: 'bridge', source: 'builtin' }
+        '0xa52b3355b6e42e38ae8ec3f5e4df9abdc523e843': { name: 'Arbitrum WETH/ETH Gateway (L2)', category: 'bridge', source: 'builtin' },
+        '0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f': { name: 'SushiSwap Router (Arbitrum)', category: 'dex/router', source: 'builtin' },
+        '0x881d40237659c251811cec9c364ef91dc08d300c': { name: 'Paraswap Augustus v4 (Arbitrum)', category: 'dex/router', source: 'builtin' },
+        '0x489ee077994b6658eafa855c308275ead8097c4a': { name: 'GMX V1 Router', category: 'perp/dex', source: 'builtin' },
+        '0x4b19c70da4c6facb446a6f7e1c3a42b748f9ff1f': { name: 'Camelot V3 Router', category: 'dex/router', source: 'builtin' },
+        '0x5fd55a1b9fc24967c4d0ec1c57b8c77e8b0b2ba5': { name: 'Arbitrum Sequencer Inbox', category: 'bridge', source: 'builtin' }
     },
     optimism: {
         '0x1111111254760f7ab3f16433eea9304126dcf199': { name: '1inch Aggregation Router v5 (Optimism)', category: 'dex/router', source: 'builtin' },
         '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' },
-        '0x6f1e1d7f6f1437e2dfbd64b7b50a1c7c8c8b74f6': { name: 'Optimism L2 Standard Bridge', category: 'bridge', source: 'builtin' }
+        '0x6f1e1d7f6f1437e2dfbd64b7b50a1c7c8c8b74f6': { name: 'Optimism L2 Standard Bridge', category: 'bridge', source: 'builtin' },
+        '0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f': { name: 'SushiSwap Router (Optimism)', category: 'dex/router', source: 'builtin' },
+        '0xdef1c0ded9bec7f1a1670819833240f027b25eff': { name: '0x Exchange Proxy (Optimism)', category: 'dex/router', source: 'builtin' },
+        '0x4200000000000000000000000000000000000006': { name: 'WETH (Optimism canonical)', category: 'token', source: 'builtin' }
     },
     polygon: {
         '0x1111111254760f7ab3f16433eea9304126dcf199': { name: '1inch Aggregation Router v5 (Polygon)', category: 'dex/router', source: 'builtin' },
         '0x1b02da8cb0d097eb8d57a175b88c7d8b47997506': { name: 'SushiSwap Router', category: 'dex/router', source: 'builtin' },
-        '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' }
+        '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' },
+        '0xa5e0829caededf2f5c3f2deb5944a08dbd8f96d5': { name: 'QuickSwap (Uniswap V2) Router', category: 'dex/router', source: 'builtin' },
+        '0x1ce0c2827e2ef14d5c7d0c41ff14206942acc0d7': { name: 'Aave V3 Pool (Polygon)', category: 'lending', source: 'builtin' }
     },
     base: {
         '0x1111111254760f7ab3f16433eea9304126dcf199': { name: '1inch Aggregation Router v5 (Base)', category: 'dex/router', source: 'builtin' },
         '0x474e3c26b02e3f5f4a5ffcd17a04528d7dc21634': { name: 'Base L2 Standard Bridge', category: 'bridge', source: 'builtin' },
-        '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' }
+        '0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45': { name: 'Uniswap Universal Router 02', category: 'dex/router', source: 'builtin' },
+        '0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f': { name: 'SushiSwap Router (Base)', category: 'dex/router', source: 'builtin' },
+        '0x5c9d6f1b17a0cee870c39e0c99bfec23e86e9be5': { name: 'Base Canonical Bridge (Portal)', category: 'bridge', source: 'builtin' }
+    },
+    bsc: {
+        '0x1111111254760f7ab3f16433eea9304126dcf199': { name: '1inch Aggregation Router v5 (BSC)', category: 'dex/router', source: 'builtin' },
+        '0x10ed43c718714eb63d5aa57b78b54704e256024e': { name: 'PancakeSwap V2 Router', category: 'dex/router', source: 'builtin' }
     }
 };
 
