@@ -337,7 +337,7 @@ function renderSimulationBlock(result, targetAddress) {
     return `<div class="info-row">
         <div class="info-label">Simulation (eth_call)
             <span class="tooltip-container" style="margin-left:6px;">
-                <span class="tooltip-icon">i</span>
+                <span class="tooltip-icon">?</span>
                 <span class="tooltip-text">
                     This dry-run checks the function exists, calldata is well-formed, and the chain would accept it with the shown gas estimate.
                     Return data confirms the call completed without revert. It is a sanity check only—no state is changed.
