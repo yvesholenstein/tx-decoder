@@ -1,4 +1,4 @@
-# EVM Transaction Decoder v0.1
+# EVM Transaction Decoder v0.9.1
 
 ## Overview
 Multi-chain Ethereum transaction decoder with best-effort decoding when ABI is unavailable.
