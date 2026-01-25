@@ -285,6 +285,18 @@ const KNOWN_CONTRACTS = {
     }
 };
 
+// Debug toggles (set to true to enable console debug logging)
+const DEBUG_SETTINGS = {
+    circle: true,
+    bridge: true,
+    balanceImpact: true,
+    summary: true
+};
+// expose to global so decoder.js can read it
+if (typeof window !== 'undefined') {
+    window.DEBUG_SETTINGS = DEBUG_SETTINGS;
+}
+
 // Common ABIs for all chains
 const COMMON_ABIS = {
     'ERC20': [
@@ -340,6 +352,82 @@ const COMMON_ABIS = {
                 }
             ],
             "name": "forwardEth",
+            "outputs": [],
+            "stateMutability": "payable",
+            "type": "function"
+        }
+    ],
+    'CirclePortalExecutor': [
+        {
+            "inputs": [
+                {
+                    "components": [
+                        { "internalType": "uint256", "name": "amount", "type": "uint256" },
+                        { "internalType": "uint16", "name": "dstWormholeChain", "type": "uint16" },
+                        { "internalType": "uint32", "name": "dstCircleDomain", "type": "uint32" },
+                        { "internalType": "bytes32", "name": "mintRecipient", "type": "bytes32" },
+                        { "internalType": "address", "name": "burnToken", "type": "address" },
+                        { "internalType": "bytes32", "name": "destinationCaller", "type": "bytes32" },
+                        { "internalType": "uint256", "name": "nativeGasDrop", "type": "uint256" },
+                        { "internalType": "uint256", "name": "relayerFee", "type": "uint256" },
+                        { "internalType": "uint256", "name": "refundPerByte", "type": "uint256" },
+                        { "internalType": "address", "name": "refundAddress", "type": "address" },
+                        { "internalType": "bytes", "name": "solanaPayload", "type": "bytes" },
+                        { "internalType": "bytes", "name": "cctpMetadata", "type": "bytes" }
+                    ],
+                    "internalType": "struct Payload",
+                    "name": "payload",
+                    "type": "tuple"
+                }
+            ],
+            "name": "send",
+            "outputs": [],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                { "internalType": "address", "name": "burnToken", "type": "address" },
+                { "internalType": "uint256", "name": "amount", "type": "uint256" },
+                { "internalType": "uint32", "name": "destinationDomain", "type": "uint32" },
+                { "internalType": "bytes32", "name": "mintRecipient", "type": "bytes32" }
+            ],
+            "name": "depositForBurn",
+            "outputs": [],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                { "internalType": "uint256", "name": "amount", "type": "uint256" },
+                { "internalType": "uint16", "name": "dstWormholeChain", "type": "uint16" },
+                { "internalType": "uint32", "name": "destinationDomain", "type": "uint32" },
+                { "internalType": "bytes32", "name": "mintRecipient", "type": "bytes32" },
+                { "internalType": "address", "name": "burnToken", "type": "address" },
+                { "internalType": "bytes32", "name": "destinationCaller", "type": "bytes32" },
+                { "internalType": "uint256", "name": "maxFee", "type": "uint256" },
+                { "internalType": "uint32", "name": "minFinalityThreshold", "type": "uint32" },
+                {
+                    "components": [
+                        { "internalType": "address", "name": "sender", "type": "address" },
+                        { "internalType": "bytes", "name": "solanaPayload", "type": "bytes" },
+                        { "internalType": "bytes", "name": "cctpMetadata", "type": "bytes" }
+                    ],
+                    "internalType": "struct ExecutorArgs",
+                    "name": "executorArgs",
+                    "type": "tuple"
+                },
+                {
+                    "components": [
+                        { "internalType": "uint16", "name": "fee", "type": "uint16" },
+                        { "internalType": "address", "name": "payee", "type": "address" }
+                    ],
+                    "internalType": "struct FeeArgs",
+                    "name": "feeArgs",
+                    "type": "tuple"
+                }
+            ],
+            "name": "depositForBurn",
             "outputs": [],
             "stateMutability": "payable",
             "type": "function"

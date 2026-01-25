@@ -8,6 +8,25 @@
     };
 })();
 
+// Ensure debug settings are available (config.js may define DEBUG_SETTINGS)
+if (typeof window !== 'undefined') {
+    if (!window.DEBUG_SETTINGS && typeof DEBUG_SETTINGS !== 'undefined') {
+        window.DEBUG_SETTINGS = DEBUG_SETTINGS;
+    }
+}
+
+function debugLog(topic, ...args) {
+    try {
+        const cfg = (typeof window !== 'undefined' && window.DEBUG_SETTINGS)
+            ? window.DEBUG_SETTINGS
+            : (typeof DEBUG_SETTINGS !== 'undefined' ? DEBUG_SETTINGS : null);
+        if (!cfg) return;
+        if (cfg[topic] || cfg.all) {
+            console.log(`[debug:${topic}]`, ...args);
+        }
+    } catch (_) { }
+}
+
 // Format number with thousands separators (using apostrophe)
 function formatWithCommas(numStr) {
     try {
@@ -198,6 +217,34 @@ function bytes32ToSS58(hexValue, prefix = 42) {
     } catch (e) {
         return null;
     }
+}
+
+// Convert bytes32 (or 32-byte hex) to Base58 (Solana-style) for display
+function bytes32ToBase58(hexValue) {
+    try {
+        const bytes = ethers.utils.arrayify(hexValue);
+        if (bytes.length !== 32) return null;
+        return base58Encode(bytes);
+    } catch (_) {
+        return null;
+    }
+}
+
+// Decode 32-byte chunks from a hex payload into candidate Base58 pubkeys (Solana-style)
+function extractSolanaPubkeysFromBytes(hexPayload) {
+    const results = [];
+    if (!hexPayload || typeof hexPayload !== 'string' || !hexPayload.startsWith('0x')) return results;
+    try {
+        const bytes = ethers.utils.arrayify(hexPayload);
+        for (let i = 0; i + 32 <= bytes.length; i += 32) {
+            const chunk = bytes.slice(i, i + 32);
+            try {
+                const b58 = base58Encode(chunk);
+                results.push(b58);
+            } catch (_) { /* ignore invalid */ }
+        }
+    } catch (_) { }
+    return Array.from(new Set(results)); // unique
 }
 
 function getHexValueForParam(paramDefinition, value) {
@@ -425,6 +472,116 @@ async function buildAssetImpact(decoded, options) {
         impacts.push({ type: 'erc20-approve', token: decoded.contractAddress, spender, amount });
     }
 
+    // Circle/Portal CCTP burn: count USDC outflow even though value is burned
+    if (decoded.signature === 'send((uint256,uint16,uint32,bytes32,address,bytes32,uint256,uint256,uint256,address,bytes,bytes))' && args.length >= 1) {
+        const payload = args[0];
+        if (payload?.amount) {
+            impacts.push({ type: 'erc20-transfer', token: CIRCLE_USDC, amount: ethers.BigNumber.from(payload.amount) });
+        }
+    }
+    if (fn === 'depositforburn' && args.length >= 2) {
+        // Support both Circle CCTP depositForBurn overloads:
+        // v1: depositForBurn(address burnToken, uint256 amount, ...)
+        // v2: depositForBurn(uint256 amount, uint16 dstChain, uint32 dstDomain, bytes32 mintRecipient, address burnToken, ...)
+        let burnToken = null;
+        let amount = null;
+        if (args.length >= 5 && !ethers.utils.isAddress(args[0]) && ethers.utils.isAddress(args[4])) {
+            amount = args[0];
+            burnToken = args[4];
+        } else {
+            burnToken = args[0];
+            amount = args[1];
+        }
+        debugLog('balanceImpact', 'depositForBurn detected', { burnToken, amount: amount?.toString?.() });
+        impacts.push({ type: 'erc20-transfer', token: burnToken || CIRCLE_USDC, amount: ethers.BigNumber.from(amount) });
+    } else if (decoded.signature && decoded.signature.toLowerCase().startsWith('depositforburn(') && args.length >= 1) {
+        // Fallback: force-count burn amount even if functionName parsing failed
+        try {
+            let burnToken = null;
+            let amount = null;
+            if (args.length >= 5 && ethers.utils.isAddress(args[4])) {
+                amount = args[0];
+                burnToken = args[4];
+            } else if (args.length >= 2) {
+                burnToken = args[0];
+                amount = args[1];
+            }
+            if (amount) {
+                debugLog('balanceImpact', 'depositForBurn fallback detected', { burnToken, amount: amount?.toString?.() });
+                impacts.push({
+                    type: 'erc20-transfer',
+                    token: burnToken || CIRCLE_USDC,
+                    amount: ethers.BigNumber.from(amount),
+                    note: 'Circle CCTP burn detected.'
+                });
+            }
+        } catch (_) { /* ignore */ }
+    }
+
+    // Heuristic: contract is not an ERC-20, but params look like (token address + amount) and could spend via allowance
+    if (!impacts.some(i => i.type === 'erc20-transfer')) {
+        let tokenAddress = null;
+        let amountCandidate = null;
+
+        if (decoded.fragment && Array.isArray(decoded.fragment.inputs)) {
+            decoded.fragment.inputs.forEach((input, idx) => {
+                const v = args[idx];
+                if (!tokenAddress && input.type === 'address' && getTokenInfo(v)) {
+                    tokenAddress = v;
+                }
+                if (!amountCandidate && input.type.startsWith('uint')) {
+                    try {
+                        const bn = ethers.BigNumber.from(v);
+                        if (!bn.isZero()) amountCandidate = bn;
+                    } catch (_) { }
+                }
+            });
+        }
+
+        // Fallback scan if ABI metadata missing
+        if (!tokenAddress) {
+            for (const v of args) {
+                if (typeof v === 'string' && ethers.utils.isAddress(v) && getTokenInfo(v)) {
+                    tokenAddress = v;
+                    break;
+                }
+            }
+        }
+        if (!amountCandidate) {
+            for (const v of args) {
+                try {
+                    const bn = ethers.BigNumber.from(v);
+                    if (!bn.isZero()) { amountCandidate = bn; break; }
+                } catch (_) { }
+            }
+        }
+
+        if (tokenAddress && amountCandidate) {
+            impacts.push({
+                type: 'erc20-transfer',
+                token: tokenAddress,
+                amount: amountCandidate,
+                note: 'Heuristic: call likely spends approved tokens from your wallet.'
+            });
+        }
+    }
+
+    // Heuristic: if the contract itself is an ERC-20 and we have a numeric arg, surface a possible outflow
+    if (!impacts.some(i => i.type === 'erc20-transfer') && decoded.contractAddress) {
+        const tokenInfo = getTokenInfo(decoded.contractAddress);
+        if (tokenInfo) {
+            const candidate = args.find(a => {
+                try { return ethers.BigNumber.isBigNumber(a) || a?._isBigNumber || typeof a === 'number' || (typeof a === 'string' && a !== '' && !isNaN(a)); } catch (_) { return false; }
+            });
+            if (candidate !== undefined) {
+                try {
+                    const amt = ethers.BigNumber.from(candidate);
+                    impacts.push({ type: 'erc20-transfer', token: decoded.contractAddress, amount: amt, note: 'Heuristic: contract is ERC-20; showing possible token outflow.' });
+                } catch (_) { /* ignore */ }
+            }
+        }
+    }
+
     if (impacts.length === 0 && args.length >= 2 && ethers.utils.isAddress(args[0]) && decoded.fragment?.inputs?.[0]?.type === 'address') {
         try {
             const amt = ethers.BigNumber.from(args[1]);
@@ -473,7 +630,8 @@ async function buildAssetImpact(decoded, options) {
                     `Token: ${impact.token}`,
                     `Before: ${before ? formatWithCommas(ethers.utils.formatUnits(before, decimals)) : 'N/A'} ${symbol}`,
                     impact.amount.isZero() ? changeLine : `<span class="impact-change-highlight">${changeLine}</span>`,
-                    `After: ${after ? formatWithCommas(ethers.utils.formatUnits(after, decimals)) : 'N/A'} ${symbol}`
+                    `After: ${after ? formatWithCommas(ethers.utils.formatUnits(after, decimals)) : 'N/A'} ${symbol}`,
+                    impact.note ? `<span class="small-text">${impact.note}</span>` : ''
                 ]
             });
         } else if (impact.type === 'erc20-approve') {
@@ -855,6 +1013,32 @@ const SNOWBRIDGE_GATEWAY_ADDRESS = '0x27ca963c279c93801941e1eb8799c23f407d68e7';
 const PORTAL_FORWARDER_ADDRESSES = new Set([
     '0x87a26566dbb3bf206634c1792a96ff4989e3f56e'
 ]);
+const CIRCLE_PORTAL_EXECUTOR = '0x2ccf230467fe7387674baa657747f0b5485c7fec';
+const CIRCLE_USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+const CIRCLE_DOMAIN_NAMES = {
+    0: 'Ethereum',
+    1: 'Avalanche',
+    2: 'OP',
+    3: 'Arbitrum',
+    5: 'Solana',
+    6: 'Base',
+    7: 'Polygon PoS',
+    10: 'Unichain',
+    11: 'Linea',
+    12: 'Codex',
+    13: 'Sonic',
+    14: 'World Chain',
+    15: 'Monad',
+    16: 'Sei',
+    17: 'BNB Smart Chain',
+    18: 'XDC',
+    19: 'HyperEVM',
+    21: 'Ink',
+    22: 'Plume',
+    25: 'Starknet',
+    26: 'Arc Testnet'
+};
+const CIRCLE_PORTAL_SELECTOR = '0xe59ced5d';
 
 const WORMHOLE_PORTAL_ADDRESSES = {
     ethereum: {
@@ -1804,6 +1988,7 @@ function assessTransaction(decoded) {
 function buildBridgeAssessment(decoded, interpretations = []) {
     const target = (decoded.contractAddress || '').toLowerCase();
     const signature = decoded.signature || '';
+    debugLog('bridge', { target, signature, fn: decoded.functionName });
 
     if (target) {
         if (target === ENERGY_WEB_BRIDGE_ADDRESSES.ewcLift ||
@@ -1819,6 +2004,9 @@ function buildBridgeAssessment(decoded, interpretations = []) {
         if (PORTAL_FORWARDER_ADDRESSES.has(target)) {
             return buildPortalForwarderSummary(decoded);
         }
+        if (target === CIRCLE_PORTAL_EXECUTOR) {
+            return buildCirclePortalSummary(decoded);
+        }
         if (WORMHOLE_ADDRESS_SET.has(target)) {
             return buildWormholeSummary(decoded, interpretations);
         }
@@ -1833,6 +2021,13 @@ function buildBridgeAssessment(decoded, interpretations = []) {
         }
         if (signature === 'forwardERC20(bytes,address,uint256,(uint256,address))') {
             return buildPortalForwarderSummary(decoded);
+        }
+        if (signature === 'send((uint256,uint16,uint32,bytes32,address,bytes32,uint256,uint256,uint256,address,bytes,bytes))' || signature === CIRCLE_PORTAL_SELECTOR) {
+            return buildCirclePortalSummary(decoded);
+        }
+        if (signature === 'depositForBurn(address,uint256,uint32,bytes32)' ||
+            signature === 'depositForBurn(uint256,uint16,uint32,bytes32,address,bytes32,uint256,uint32,(address,bytes,bytes),(uint16,address))') {
+            return buildCirclePortalSummary(decoded);
         }
         if (LAYERZERO_SIGNATURES.has(signature)) {
             return buildLayerZeroSummary(decoded);
@@ -2411,6 +2606,254 @@ function buildWormholeSummary(decoded) {
     return summary;
 }
 
+function buildCirclePortalSummary(decoded) {
+    const arg = decoded.args && decoded.args[0];
+    debugLog('circle', 'buildCirclePortalSummary invoked', {
+        functionName: decoded.functionName,
+        signature: decoded.signature,
+        args: decoded.args
+    });
+    const summary = {
+        bridgeName: 'Portal USDC (Circle CCTP)',
+        confidence: 'high',
+        likelyFunction: decoded.signature || 'send((amount,dstWormholeChain,dstCircleDomain,mintRecipient,burnToken,destinationCaller,nativeGasDrop,relayerFee,refundPerByte,refundAddress,solanaPayload,cctpMetadata))',
+        description: 'Burns USDC on Ethereum via Circle CCTP and instructs Portal/Wormhole to mint on the destination chain.',
+        hint: 'Verify the USDC amount, destination chain/domain, Solana recipient bytes32, and relayer/gas settings before signing.',
+        docUrl: 'https://portalbridge.com/',
+        parameters: []
+    };
+
+    // Handle depositForBurn overloads
+    if ((decoded.functionName || '').toLowerCase() === 'depositforburn') {
+        // v2 signature: depositForBurn(uint256 amount, uint16 dstChain, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, ...)
+        if (decoded.args.length >= 5 && !ethers.utils.isAddress(decoded.args[0]) && ethers.utils.isAddress(decoded.args[4])) {
+            const amount = decoded.args[0];
+            const destinationChain = decoded.args[1];
+            const destinationDomain = decoded.args[2];
+            const mintRecipient = decoded.args[3];
+            const burnToken = decoded.args[4];
+            const executorArgs = decoded.args[8]; // tuple: sender, solanaPayload, cctpMetadata
+            const solanaPayloadV2 = executorArgs?.solanaPayload || (Array.isArray(executorArgs) ? executorArgs[1] : null);
+
+            const domainNum = ethers.BigNumber.isBigNumber(destinationDomain) ? destinationDomain.toNumber() : Number(destinationDomain);
+            const domainLabel = CIRCLE_DOMAIN_NAMES[domainNum] || String(domainNum);
+            const wormholeChainNum = ethers.BigNumber.isBigNumber(destinationChain) ? destinationChain.toNumber() : Number(destinationChain);
+            const wormholeLabel = formatWormholeChainName ? formatWormholeChainName(wormholeChainNum) : String(destinationChain);
+            const formattedAmount = tryFormatTokenAmount ? tryFormatTokenAmount(amount, burnToken || CIRCLE_USDC) : null;
+            const solanaRecipient = bytes32ToBase58(mintRecipient);
+
+            summary.likelyFunction = decoded.signature || 'depositForBurn(uint256,uint16,uint32,bytes32,address,bytes32,uint256,uint32,(address,bytes,bytes),(uint16,address))';
+            summary.description = `Burning ${formattedAmount || (amount?.toString?.() || '?')} via Circle CCTP to mint on destination domain ${domainLabel} (Wormhole chain ${wormholeLabel}).`;
+            summary.parameters.push({
+                name: 'amount',
+                type: 'uint256',
+                description: 'USDC burned on source chain',
+                value: amount?.toString?.() || String(amount),
+                formatted: formattedAmount
+            });
+            summary.parameters.push({
+                name: 'destinationChain',
+                type: 'uint16',
+                description: 'Wormhole chain ID for executor',
+                value: wormholeChainNum?.toString?.() || String(wormholeChainNum),
+                formatted: wormholeLabel
+            });
+            summary.parameters.push({
+                name: 'destinationDomain',
+                type: 'uint32',
+                description: 'Circle CCTP domain',
+                value: domainNum?.toString?.() || String(domainNum),
+                formatted: domainLabel
+            });
+            summary.parameters.push({
+                name: 'mintRecipient',
+                type: 'bytes32',
+                description: 'Destination recipient (bytes32)',
+                value: mintRecipient,
+                formatted: solanaRecipient ? `Solana: ${solanaRecipient}` : null
+            });
+            summary.parameters.push({
+                name: 'burnToken',
+                type: 'address',
+                description: 'Token burned (should be canonical USDC)',
+                value: formatAddressWithTokenInfo ? formatAddressWithTokenInfo(burnToken) : burnToken
+            });
+
+            // Heuristic extraction of Solana pubkeys from payload (v2 executor args)
+            const payloadPubkeysV2 = extractSolanaPubkeysFromBytes(solanaPayloadV2);
+            if (payloadPubkeysV2.length) {
+                summary.parameters.push({
+                    name: 'solanaPubkeys',
+                    type: 'string[]',
+                    description: 'Pubkeys found in Solana payload (candidate accounts)',
+                    value: payloadPubkeysV2.join(', '),
+                    formatted: payloadPubkeysV2.join(', ')
+                });
+            }
+
+            return summary;
+        }
+
+        // v1 signature: depositForBurn(address burnToken, uint256 amount, uint32 destinationDomain, bytes32 mintRecipient)
+        const burnToken = decoded.args[0];
+        const amount = decoded.args[1];
+        const destinationDomain = decoded.args[2];
+        const mintRecipient = decoded.args[3];
+        const domainNum = ethers.BigNumber.isBigNumber(destinationDomain) ? destinationDomain.toNumber() : Number(destinationDomain);
+        const domainLabel = CIRCLE_DOMAIN_NAMES[domainNum] || String(domainNum);
+        const formattedAmount = tryFormatTokenAmount ? tryFormatTokenAmount(amount, burnToken || CIRCLE_USDC) : null;
+        const solanaRecipient = bytes32ToBase58(mintRecipient);
+
+        summary.likelyFunction = 'depositForBurn(address burnToken, uint256 amount, uint32 destinationDomain, bytes32 mintRecipient)';
+        summary.description = `Burning ${formattedAmount || (amount?.toString?.() || '?')} via Circle CCTP to mint on destination domain ${domainLabel}.`;
+        summary.parameters.push({
+            name: 'amount',
+            type: 'uint256',
+            description: 'USDC burned on source chain',
+            value: amount?.toString?.() || String(amount),
+            formatted: formattedAmount
+        });
+        summary.parameters.push({
+            name: 'destinationDomain',
+            type: 'uint32',
+            description: 'Circle CCTP domain',
+            value: destinationDomain?.toString?.() || String(destinationDomain),
+            formatted: domainLabel
+        });
+        summary.parameters.push({
+            name: 'mintRecipient',
+            type: 'bytes32',
+            description: 'Destination recipient (bytes32)',
+            value: mintRecipient,
+            formatted: solanaRecipient ? `Solana: ${solanaRecipient}` : null
+        });
+        summary.parameters.push({
+            name: 'burnToken',
+            type: 'address',
+            description: 'Token burned (should be canonical USDC)',
+            value: formatAddressWithTokenInfo ? formatAddressWithTokenInfo(burnToken) : burnToken
+        });
+        return summary;
+    }
+
+    if (!arg || typeof arg !== 'object') return summary;
+
+    const amount = arg.amount;
+    const wormholeChain = arg.dstWormholeChain;
+    const circleDomain = arg.dstCircleDomain;
+    const recipient = arg.mintRecipient;
+    const burnToken = arg.burnToken;
+    const destinationCaller = arg.destinationCaller;
+    const nativeGasDrop = arg.nativeGasDrop;
+    const relayerFee = arg.relayerFee;
+    const refundPerByte = arg.refundPerByte;
+    const refundAddress = arg.refundAddress;
+    const solanaPayload = arg.solanaPayload;
+    const cctpMetadata = arg.cctpMetadata;
+
+    const wormholeChainNum = ethers.BigNumber.isBigNumber(wormholeChain) ? wormholeChain.toNumber() : Number(wormholeChain);
+    const circleDomainNum = ethers.BigNumber.isBigNumber(circleDomain) ? circleDomain.toNumber() : Number(circleDomain);
+    const chainLabel = formatWormholeChainName ? formatWormholeChainName(wormholeChainNum) : String(wormholeChainNum);
+    const domainLabel = CIRCLE_DOMAIN_NAMES[circleDomainNum] || String(circleDomainNum);
+    const formattedAmount = tryFormatTokenAmount ? tryFormatTokenAmount(amount, burnToken || CIRCLE_USDC) : null;
+    const solanaRecipient = bytes32ToBase58(recipient);
+
+    summary.parameters.push({
+        name: 'amount',
+        type: 'uint256',
+        description: 'USDC burned on source chain',
+        value: amount?.toString?.() || String(amount),
+        formatted: formattedAmount
+    });
+summary.parameters.push({
+        name: 'dstWormholeChain',
+        type: 'uint16',
+        description: 'Portal/Wormhole destination chain',
+        value: wormholeChainNum?.toString?.() || String(wormholeChainNum),
+        formatted: chainLabel
+    });
+    summary.parameters.push({
+        name: 'dstCircleDomain',
+        type: 'uint32',
+        description: 'Circle CCTP domain',
+        value: circleDomainNum?.toString?.() || String(circleDomainNum),
+        formatted: domainLabel
+    });
+    summary.parameters.push({
+        name: 'mintRecipient',
+        type: 'bytes32',
+        description: 'Destination (Solana) recipient',
+        value: recipient,
+        formatted: solanaRecipient ? `Solana: ${solanaRecipient}` : null
+    });
+    summary.parameters.push({
+        name: 'burnToken',
+        type: 'address',
+        description: 'Token burned (should be canonical USDC)',
+        value: formatAddressWithTokenInfo ? formatAddressWithTokenInfo(burnToken) : burnToken
+    });
+    summary.parameters.push({
+        name: 'destinationCaller',
+        type: 'bytes32',
+        description: 'Destination program or caller identifier',
+        value: destinationCaller
+    });
+    summary.parameters.push({
+        name: 'nativeGasDrop',
+        type: 'uint256',
+        description: 'Native gas dropped on destination',
+        value: nativeGasDrop?.toString?.() || String(nativeGasDrop)
+    });
+    summary.parameters.push({
+        name: 'relayerFee',
+        type: 'uint256',
+        description: 'Relayer fee charged on source',
+        value: relayerFee?.toString?.() || String(relayerFee)
+    });
+    summary.parameters.push({
+        name: 'refundPerByte',
+        type: 'uint256',
+        description: 'Refund rate per byte of metadata',
+        value: refundPerByte?.toString?.() || String(refundPerByte)
+    });
+    summary.parameters.push({
+        name: 'refundAddress',
+        type: 'address',
+        description: 'Address receiving any refunds',
+        value: refundAddress || '0x0000000000000000000000000000000000000000'
+    });
+    summary.parameters.push({
+        name: 'solanaPayload',
+        type: 'bytes',
+        description: 'Portal Solana instructions',
+        value: solanaPayload ? `${solanaPayload.slice(0, 66)}...` : '0x'
+    });
+            summary.parameters.push({
+                name: 'cctpMetadata',
+                type: 'bytes',
+                description: 'Circle attestation metadata',
+                value: cctpMetadata ? `${cctpMetadata.slice(0, 66)}...` : '0x'
+            });
+
+            // Heuristic extraction of Solana pubkeys from payload
+            const payloadPubkeys = extractSolanaPubkeysFromBytes(solanaPayload);
+            if (payloadPubkeys.length) {
+                summary.parameters.push({
+                    name: 'solanaPubkeys',
+                    type: 'string[]',
+                    description: 'Pubkeys found in Solana payload (candidate accounts)',
+                    value: payloadPubkeys.join(', '),
+                    formatted: payloadPubkeys.join(', ')
+                });
+            }
+
+    if (burnToken && burnToken.toLowerCase() !== CIRCLE_USDC) {
+        summary.hint += ' Warning: burnToken is not canonical USDC.';
+    }
+
+    return summary;
+}
+
 function buildPortalForwarderSummary(decoded) {
     const args = decoded.args || [];
     const fnName = (decoded.functionName || '').toLowerCase();
@@ -2902,6 +3345,25 @@ async function decodeManual() {
         updateDecodeStatus('Fetching ABI for provided contract...', 'info');
         const baseAbi = await fetchAbiFromEtherscan(contractAddress, effectiveApiKey);
 
+        // Try explorer implementation ABI first (common proxy case where proxy ABI is minimal)
+        const explorerImplementation = await fetchImplementationFromExplorer(contractAddress, effectiveApiKey);
+        if (explorerImplementation) {
+            updateDecodeStatus(`Explorer reports implementation ${explorerImplementation}. Fetching ABI...`, 'info');
+            const implAbi = await fetchAbiFromEtherscan(explorerImplementation, effectiveApiKey);
+            try {
+                const decodedExplorer = await decodeTxData(txData, implAbi, null, contractAddress);
+                if (decodedExplorer) {
+                    decodedExplorer.proxyWarning = `Detected proxy relationship via explorer metadata. Decoded via implementation ${explorerImplementation}.`;
+                    attachTransactionHash(decodedExplorer, txMeta, txData);
+                    updateDecodeStatus('Decoded via explorer-provided implementation ABI.', 'success');
+                    await displayDecoded(decodedExplorer, simulationOptions);
+                    return;
+                }
+            } catch (decodeError) {
+                console.info('Decoding with explorer implementation ABI failed:', decodeError.message || decodeError);
+            }
+        }
+
         let decodedWithBaseAbi = null;
         try {
             decodedWithBaseAbi = await decodeTxData(txData, baseAbi, null, contractAddress);
@@ -2914,26 +3376,6 @@ async function decodeManual() {
             attachTransactionHash(decodedWithBaseAbi, txMeta, txData);
             await displayDecoded(decodedWithBaseAbi, simulationOptions);
             return;
-        }
-
-        updateDecodeStatus('ABI did not match the provided contract. Checking explorer metadata for proxy implementation...', 'warning');
-        const explorerImplementation = await fetchImplementationFromExplorer(contractAddress, effectiveApiKey);
-        if (explorerImplementation) {
-            updateDecodeStatus(`Explorer reported implementation ${explorerImplementation}. Fetching ABI...`, 'info');
-            const implAbi = await fetchAbiFromEtherscan(explorerImplementation, effectiveApiKey);
-            let decodedExplorer = null;
-            try {
-                decodedExplorer = await decodeTxData(txData, implAbi, null, contractAddress);
-            } catch (decodeError) {
-                console.info('Decoding with explorer implementation ABI failed:', decodeError.message || decodeError);
-            }
-            if (decodedExplorer) {
-                decodedExplorer.proxyWarning = `Detected proxy relationship via explorer metadata. Decoded via implementation ${explorerImplementation}.`;
-                attachTransactionHash(decodedExplorer, txMeta, txData);
-                updateDecodeStatus('Decoded via explorer-provided implementation ABI.', 'success');
-                await displayDecoded(decodedExplorer, simulationOptions);
-                return;
-            }
         }
 
         updateDecodeStatus('ABI did not match the provided contract. Checking for proxy implementation...', 'warning');
@@ -3066,6 +3508,30 @@ async function displayDecoded(decoded, options = {}) {
     const bridgeSummary = buildBridgeAssessment(decoded, decoded.interpretations || []);
     let finalSummary = bridgeSummary || generalSummary;
 
+    // Fallback: ensure Circle CCTP burn calls get a summary even if bridge detection failed
+    if (!finalSummary && decoded.functionName && decoded.functionName.toLowerCase() === 'depositforburn') {
+        debugLog('summary', 'circle-fallback-summary triggered');
+        let burnToken = decoded.args?.[0];
+        let amount = decoded.args?.[1];
+        if (decoded.args && decoded.args.length >= 5 && !ethers.utils.isAddress(decoded.args[0]) && ethers.utils.isAddress(decoded.args[4])) {
+            amount = decoded.args[0];
+            burnToken = decoded.args[4];
+        }
+        const tokenInfo = burnToken ? getTokenInfo(burnToken) : null;
+        const symbol = tokenInfo ? tokenInfo.symbol : 'tokens';
+        const decimals = tokenInfo ? tokenInfo.decimals : 18;
+        let formattedAmount = amount ? amount.toString() : '?';
+        try {
+            formattedAmount = ethers.utils.formatUnits(amount, decimals);
+            formattedAmount = formatWithCommas(formattedAmount);
+        } catch (_) { }
+        const targetLabel = formatAddressWithName(decoded.contractAddress || '');
+        finalSummary = {
+            description: `Calling <strong>depositForBurn</strong> on ${targetLabel} to burn <strong>${formattedAmount} ${symbol}</strong> for Circle CCTP mint on the destination chain.`,
+            hint: 'Fallback summary: Circle CCTP burn detected.'
+        };
+    }
+
     // If this was decoded via proxy path and no summary matched, still show a proxy-aware summary.
     if (!finalSummary && decoded.functionName) {
         const targetLabel = formatAddressWithName(decoded.contractAddress || '');
@@ -3155,12 +3621,14 @@ async function displayDecoded(decoded, options = {}) {
 
             bridgeSummary.parameters.forEach(param => {
                 const rawValue = param.value !== undefined && param.value !== null ? param.value : 'Not available';
+                const formattedDiffers = param.formatted && String(param.formatted) !== String(rawValue);
+                const primaryValue = formattedDiffers ? param.formatted : rawValue;
                 html += `<div class="param-item">
                     <strong>${param.name}</strong> (${param.type})<br>
                     <span style="color: #666; font-size: 0.9em;">${param.description}</span><br>
-                    <span style="color: #666;">${rawValue}</span><br>
-                    ${param.formatted ? `<span class="formatted-value">${param.formatted}</span><br>` : ''}
-                    <span style="color: #999; font-size: 0.85em;">Raw: ${rawValue}</span>
+                    <span style="color: #666;">${primaryValue}</span><br>
+                    ${formattedDiffers ? `<span class="formatted-value">${param.formatted}</span><br>` : ''}
+                    ${formattedDiffers ? `<span style="color: #999; font-size: 0.85em;">Raw: ${rawValue}</span>` : ''}
                 </div>`;
             });
 
@@ -3545,6 +4013,11 @@ function generateTransactionSummary(decoded) {
 
     let description = '';
     let hint = '';
+    debugLog('summary', 'generateTransactionSummary', {
+        functionName: decoded.functionName,
+        signature: decoded.signature,
+        args: decoded.args
+    });
 
     if (decoded.functionName === 'transfer' && decoded.args.length === 2) {
         // ERC20 Transfer
@@ -3578,6 +4051,24 @@ function generateTransactionSummary(decoded) {
         const spenderDisplay = formatAddressWithName(spender);
         description = `Approving <strong>${spenderDisplay}</strong> to spend <strong>${formattedAmount} ${symbol}</strong>`;
         hint = 'Check if the spender is a trusted contract.';
+    } else if (decoded.functionName && decoded.functionName.toLowerCase() === 'depositforburn' && decoded.args.length >= 2) {
+        let burnToken = decoded.args[0];
+        let amount = decoded.args[1];
+        if (!ethers.utils.isAddress(decoded.args[0]) && decoded.args.length >= 5 && ethers.utils.isAddress(decoded.args[4])) {
+            amount = decoded.args[0];
+            burnToken = decoded.args[4];
+        }
+        const tokenInfo = getTokenInfo(burnToken);
+        const symbol = tokenInfo ? tokenInfo.symbol : 'tokens';
+        const decimals = tokenInfo ? tokenInfo.decimals : 18;
+        let formattedAmount = amount.toString();
+        try {
+            formattedAmount = ethers.utils.formatUnits(amount, decimals);
+            formattedAmount = formatWithCommas(formattedAmount);
+        } catch (e) { }
+        const targetLabel = formatAddressWithName(decoded.contractAddress || '');
+        description = `Calling <strong>depositForBurn</strong> on ${targetLabel} to burn <strong>${formattedAmount} ${symbol}</strong> for Circle CCTP mint on the destination chain.`;
+        hint = 'Confirm the burn amount, destination domain/recipient, and burn token before signing.';
     } else if (decoded.functionName === 'transformERC20') {
         description = `Swapping tokens via 0x API (transformERC20)`;
     } else {
