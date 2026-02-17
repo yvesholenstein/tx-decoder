@@ -38,6 +38,65 @@
         const results = [];
         const knownChains = getKnownChainIds();
         const params = bridgeSummary?.parameters || [];
+        const isCircle = (bridgeSummary?.bridgeName || '').toLowerCase().includes('circle');
+
+        // Circle CCTP-specific validation
+        if (isCircle) {
+            const domainParam = findParam(bridgeSummary, n => n.toLowerCase().includes('domain'));
+            if (domainParam) {
+                const numeric = toNumberSafe(domainParam.value);
+                if (numeric === null) {
+                    addResult(results, 'warn', 'CCTP Domain', 'Could not parse Circle destination domain.');
+                } else if (numeric <= 0) {
+                    addResult(results, 'fail', 'CCTP Domain', 'Domain must be > 0.');
+                } else {
+                    addResult(results, 'success', 'CCTP Domain', `Domain ${numeric} looks valid.`);
+                }
+            }
+
+            const chainParam = findParam(bridgeSummary, n => n.toLowerCase().includes('chain'));
+            if (chainParam) {
+                const numeric = toNumberSafe(chainParam.value);
+                if (numeric === null) {
+                    addResult(results, 'warn', 'Wormhole Chain', 'Could not parse destination chain ID.');
+                } else if (numeric <= 0) {
+                    addResult(results, 'fail', 'Wormhole Chain', 'Destination chain ID must be > 0.');
+                } else {
+                    addResult(results, 'success', 'Wormhole Chain', `Destination chain ${numeric} looks valid.`);
+                }
+            }
+
+            const recipientParam = findParam(bridgeSummary, n => n.toLowerCase().includes('recipient'));
+            if (recipientParam && typeof recipientParam.value === 'string') {
+                const v = recipientParam.value;
+                if (isHexLike(v) && v.length === 66) {
+                    addResult(results, 'success', 'Destination encoding', 'Recipient bytes32 looks well-formed.');
+                } else {
+                    addResult(results, 'warn', 'Destination encoding', 'Recipient is not bytes32 hex.');
+                }
+            }
+
+            // Check amount/fee as usual
+            params.forEach(p => {
+                const name = (p.name || '').toLowerCase();
+                if (name.includes('amount') || name.includes('fee')) {
+                    try {
+                        const bn = ethers.BigNumber.from(p.value);
+                        if (bn.lt(0)) {
+                            addResult(results, 'fail', `${p.name}`, 'Negative amount/fee is invalid.');
+                        } else if (bn.isZero()) {
+                            addResult(results, 'warn', `${p.name}`, 'Zero amount/fee; ensure this is intended.');
+                        } else {
+                            addResult(results, 'success', `${p.name}`, 'Value is non-zero.');
+                        }
+                    } catch (_) {
+                        addResult(results, 'warn', `${p.name}`, 'Amount/fee not parseable.');
+                    }
+                }
+            });
+
+            return { results };
+        }
 
         // Generic chainId check (LayerZero, Wormhole, etc.)
         const chainParam = findParam(bridgeSummary, n => /chain/i.test(n));
