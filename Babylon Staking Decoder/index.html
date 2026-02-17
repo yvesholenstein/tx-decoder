@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Babylon Staking Decoder</title>
-    <link rel="stylesheet" href="../Multi EVM Version/styles.css">
+    <link rel="stylesheet" href="../Multi EVM Decoder/styles.css">
     <link rel="stylesheet" href="babylon-styles.css">
 </head>
 <body>
@@ -19,7 +19,7 @@
             </button>
             <h1>Babylon Staking Decoder</h1>
             <p>Calculate and verify Babylon staking transactions</p>
-            <span class="version-badge">v0.2.0</span>
+            <span class="version-badge">v1.1.0</span>
         </div>
 
         <div class="content">
@@ -30,7 +30,7 @@
             </div>
 
             <div class="mode-selector">
-                <button class="mode-btn active" onclick="switchMode('staking-entry')">Staking Entry</button>
+                <button class="mode-btn active" onclick="switchMode('staking-entry', event)">Staking Entry</button>
                 <button class="mode-btn" title="not yet implemented..." onclick="">Staking Exit</button>
                 <button class="mode-btn" title="not yet implemented..." onclick="">Rewards Claiming</button>
                 <!-- <button class="mode-btn" onclick="switchMode('staking-exit')">Staking Exit</button>
@@ -334,7 +334,7 @@
             <div class="settings-group">
                 <h3>About</h3>
                 <div style="padding: 15px; background: #f8f9fa; border-radius: 10px; font-size: 0.9em; color: #666;">
-                    <p style="margin: 0;">Babylon Staking Decoder v1.1.0<br>
+                    <p style="margin: 0;">Babylon Staking Decoder v0.2.0<br>
                     Transaction verification tool for Babylon BTC staking<br><br>
                     Inspired by: <a href="https://christophluescher.pythonanywhere.com/" target="_blank" style="color: #dc0d17;">christophluescher.pythonanywhere.com</a></p>
                 </div>

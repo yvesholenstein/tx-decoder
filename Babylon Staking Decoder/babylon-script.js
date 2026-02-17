@@ -1,3 +1,14 @@
+        // HTML escaping utility to prevent XSS via innerHTML
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // Calculation mode: 'online' or 'offline'
         let calculationMode = 'online';
 
@@ -288,8 +299,8 @@
             container.innerHTML = providers.map((provider, index) => `
                 <div class="finality-provider-item">
                     <div>
-                        <div class="name">${provider.name}</div>
-                        <div class="key">${provider.publicKey}</div>
+                        <div class="name">${escapeHtml(provider.name)}</div>
+                        <div class="key">${escapeHtml(provider.publicKey)}</div>
                     </div>
                     <button class="delete-btn" onclick="deleteFinalityProvider(${index})">Delete</button>
                 </div>
@@ -336,11 +347,13 @@
         }
 
         // Mode switching
-        function switchMode(mode) {
+        function switchMode(mode, evt) {
             document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.input-section').forEach(section => section.classList.remove('active'));
 
-            event.target.classList.add('active');
+            if (evt && evt.target) {
+                evt.target.classList.add('active');
+            }
 
             if (mode === 'staking-entry') {
                 document.getElementById('staking-entry-mode').classList.add('active');
@@ -431,9 +444,9 @@
 
             // Display result
             document.getElementById('babylon-address-display').innerHTML =
-                `<strong>Babylon Staking Address:</strong><br>${result.address}<br><br>` +
-                `<strong>Script Type:</strong> ${result.scriptType}<br>` +
-                `<strong>Network:</strong> ${network.toUpperCase()}`;
+                `<strong>Babylon Staking Address:</strong><br>${escapeHtml(result.address)}<br><br>` +
+                `<strong>Script Type:</strong> ${escapeHtml(result.scriptType)}<br>` +
+                `<strong>Network:</strong> ${escapeHtml(network.toUpperCase())}`;
 
             document.getElementById('babylon-address-result').style.display = 'block';
 
@@ -742,19 +755,19 @@
 
             // Display hashes
             document.getElementById('hash-slash-regular').innerHTML =
-                `<strong>Expected Transaction Hash:</strong><br>${hashes.slashingRegular}<br><br>` +
+                `<strong>Expected Transaction Hash:</strong><br>${escapeHtml(hashes.slashingRegular)}<br><br>` +
                 `<em>Compare this with the hash shown on your Keystone 3 device</em>`;
 
             document.getElementById('hash-slash-unbonding').innerHTML =
-                `<strong>Expected Transaction Hash:</strong><br>${hashes.slashingUnbonding}<br><br>` +
+                `<strong>Expected Transaction Hash:</strong><br>${escapeHtml(hashes.slashingUnbonding)}<br><br>` +
                 `<em>Compare this with the hash shown on your Keystone 3 device</em>`;
 
             document.getElementById('hash-link').innerHTML =
-                `<strong>Expected Transaction Hash:</strong><br>${hashes.link}<br><br>` +
+                `<strong>Expected Transaction Hash:</strong><br>${escapeHtml(hashes.link)}<br><br>` +
                 `<em>Compare this with the hash shown on your Keystone 3 device</em>`;
 
             document.getElementById('hash-staking').innerHTML =
-                `<strong>Expected Transaction Hash:</strong><br>${hashes.staking}<br><br>` +
+                `<strong>Expected Transaction Hash:</strong><br>${escapeHtml(hashes.staking)}<br><br>` +
                 `<em>Compare this with the hash shown on your Keystone 3 device</em>`;
 
             showOutput('Success', 'All transaction hashes calculated! Compare each hash with your hardware wallet display before signing.');
@@ -841,8 +854,8 @@
 
             content.innerHTML = `
                 <div class="info-row">
-                    <div class="info-label">${title}</div>
-                    <div class="info-value" style="white-space: pre-wrap;">${message}</div>
+                    <div class="info-label">${escapeHtml(title)}</div>
+                    <div class="info-value" style="white-space: pre-wrap;">${escapeHtml(message)}</div>
                 </div>
             `;
 

@@ -287,10 +287,10 @@ const KNOWN_CONTRACTS = {
 
 // Debug toggles (set to true to enable console debug logging)
 const DEBUG_SETTINGS = {
-    circle: true,
-    bridge: true,
-    balanceImpact: true,
-    summary: true
+    circle: false,
+    bridge: false,
+    balanceImpact: false,
+    summary: false
 };
 // expose to global so decoder.js can read it
 if (typeof window !== 'undefined') {

@@ -1,3 +1,16 @@
+// HTML escaping utility to prevent XSS via innerHTML (fallback if ui.js not loaded first)
+if (typeof escapeHtml !== 'function') {
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+}
+
 // Suppress console warnings
 (function () {
     const originalWarn = console.warn;
@@ -859,22 +872,6 @@ async function fetchTokenInfoViaExplorer(address) {
             const data = await fetchTokenInfoFromEndpoint(endpoint);
             if (data) return data;
         }
-
-        // Try common ABIs before giving up
-        const commonResult = tryCommonAbis(txData);
-        if (commonResult) {
-            try {
-                const decodedCommon = await decodeTxData(txData, commonResult.abi, commonResult.protocol, contractAddress);
-                if (decodedCommon) {
-                    updateDecodeStatus(`Decoded using common ABI (${commonResult.protocol}).`, 'success');
-                    attachTransactionHash(decodedCommon, txMeta, txData);
-                    await displayDecoded(decodedCommon, simulationOptions);
-                    return;
-                }
-            } catch (e) {
-                console.info('Decoding with common ABI failed:', e.message || e);
-            }
-        }
     } catch (error) {
         console.info('Explorer token info lookup failed, falling back to RPC.', error.message || error);
     }
@@ -905,7 +902,9 @@ async function fetchJsonWithCorsFallback(url) {
         return await response.json();
     } catch (error) {
         if (error.message === 'CORS_BLOCKED') {
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            // Strip API key before sending through third-party CORS proxy to prevent key leakage
+            const sanitizedUrl = url.replace(/([?&])apikey=[^&]*/gi, '$1apikey=');
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(sanitizedUrl)}`;
             const proxyResponse = await fetch(proxyUrl);
             if (!proxyResponse.ok) throw error;
             return await proxyResponse.json();
@@ -3592,25 +3591,25 @@ async function displayDecoded(decoded, options = {}) {
     html += `<div class="info-row">
         <div class="info-label">Function Name</div>
         <div class="info-value">
-            ${decoded.functionName}
-            ${selectorHint ? ` <span style="font-size: 0.9em; color: #666;">(${selectorHint})</span>` : ''}
-            ${labelReference ? `<span class="trusted-label" title="From Address Book"><i class="fas fa-check-circle"></i> ${labelReference.label}</span>` : ''}
+            ${escapeHtml(decoded.functionName)}
+            ${selectorHint ? ` <span style="font-size: 0.9em; color: #666;">(${escapeHtml(selectorHint)})</span>` : ''}
+            ${labelReference ? `<span class="trusted-label" title="From Address Book"><i class="fas fa-check-circle"></i> ${escapeHtml(labelReference.label)}</span>` : ''}
             ${isApproval ? '<div class="small-text">You are giving someone else permission to spend this amount from your account.</div>' : ''}
         </div>
     </div>`;
 
     html += `<div class="info-row">
         <div class="info-label">Function Signature</div>
-        <div class="info-value">${decoded.signature}</div>
+        <div class="info-value">${escapeHtml(decoded.signature)}</div>
     </div>`;
 
     if (bridgeSummary) {
         html += `<div class="info-row">
-            <div class="info-label">${bridgeSummary.bridgeName || 'Bridge Details'}</div>
+            <div class="info-label">${escapeHtml(bridgeSummary.bridgeName || 'Bridge Details')}</div>
             <div class="info-value">
-                <strong>${bridgeSummary.likelyFunction || decoded.functionName}</strong><br>
-                ${bridgeSummary.description}
-                ${bridgeSummary.hint ? `<div class="small-text" style="margin-top: 8px;">${bridgeSummary.hint}${bridgeSummary.docUrl ? ` (<a href="${bridgeSummary.docUrl}" target="_blank" rel="noopener noreferrer">docs</a>)` : ''}</div>` : ''}
+                <strong>${escapeHtml(bridgeSummary.likelyFunction || decoded.functionName)}</strong><br>
+                ${escapeHtml(bridgeSummary.description)}
+                ${bridgeSummary.hint ? `<div class="small-text" style="margin-top: 8px;">${escapeHtml(bridgeSummary.hint)}${bridgeSummary.docUrl ? ` (<a href="${escapeHtml(bridgeSummary.docUrl)}" target="_blank" rel="noopener noreferrer">docs</a>)` : ''}</div>` : ''}
             </div>
         </div>`;
 
@@ -3624,11 +3623,11 @@ async function displayDecoded(decoded, options = {}) {
                 const formattedDiffers = param.formatted && String(param.formatted) !== String(rawValue);
                 const primaryValue = formattedDiffers ? param.formatted : rawValue;
                 html += `<div class="param-item">
-                    <strong>${param.name}</strong> (${param.type})<br>
-                    <span style="color: #666; font-size: 0.9em;">${param.description}</span><br>
-                    <span style="color: #666;">${primaryValue}</span><br>
-                    ${formattedDiffers ? `<span class="formatted-value">${param.formatted}</span><br>` : ''}
-                    ${formattedDiffers ? `<span style="color: #999; font-size: 0.85em;">Raw: ${rawValue}</span>` : ''}
+                    <strong>${escapeHtml(param.name)}</strong> (${escapeHtml(param.type)})<br>
+                    <span style="color: #666; font-size: 0.9em;">${escapeHtml(param.description)}</span><br>
+                    <span style="color: #666;">${escapeHtml(primaryValue)}</span><br>
+                    ${formattedDiffers ? `<span class="formatted-value">${escapeHtml(param.formatted)}</span><br>` : ''}
+                    ${formattedDiffers ? `<span style="color: #999; font-size: 0.85em;">Raw: ${escapeHtml(rawValue)}</span>` : ''}
                 </div>`;
             });
 
@@ -3645,8 +3644,8 @@ async function displayDecoded(decoded, options = {}) {
                 validation.results.forEach(res => {
                     const cls = res.status === 'success' ? 'success' : (res.status === 'fail' ? 'error' : 'warning');
                     html += `<div class="param-item">
-                        <div><span class="status-pill ${cls}" style="margin-right:8px;">${res.status.toUpperCase()}</span><strong>${res.label}</strong></div>
-                        ${res.detail ? `<div style="color:#666; margin-top:4px;">${res.detail}</div>` : ''}
+                        <div><span class="status-pill ${cls}" style="margin-right:8px;">${escapeHtml(res.status.toUpperCase())}</span><strong>${escapeHtml(res.label)}</strong></div>
+                        ${res.detail ? `<div style="color:#666; margin-top:4px;">${escapeHtml(res.detail)}</div>` : ''}
                     </div>`;
                 });
                 html += `</div></div></div>`;
@@ -3690,16 +3689,16 @@ async function displayDecoded(decoded, options = {}) {
             }
 
             html += `<div class="param-item">
-                <strong>${input.name || `param${index}`}</strong> (${input.type})<br>
-                <span style="color: #666;">${displayValue}</span>
-                ${paramLabel ? `<span class="trusted-label"><i class="fas fa-check-circle"></i> ${paramLabel}</span>` : ''}<br>`;
+                <strong>${escapeHtml(input.name || `param${index}`)}</strong> (${escapeHtml(input.type)})<br>
+                <span style="color: #666;">${escapeHtml(displayValue)}</span>
+                ${paramLabel ? `<span class="trusted-label"><i class="fas fa-check-circle"></i> ${escapeHtml(paramLabel)}</span>` : ''}<br>`;
 
             if (formattedAmount) {
-                html += `<span class="formatted-value">�%^ ${formattedAmount}</span>`;
+                html += `<span class="formatted-value">�%^ ${escapeHtml(formattedAmount)}</span>`;
             }
 
             if (rawHexValue) {
-                html += `<span style="color: #999; font-size: 0.85em;">Raw: ${rawHexValue}${ledgerHint ? ` <br>(Ledger: ${ledgerHint})` : ''}</span>`;
+                html += `<span style="color: #999; font-size: 0.85em;">Raw: ${escapeHtml(rawHexValue)}${ledgerHint ? ` <br>(Ledger: ${escapeHtml(ledgerHint)})` : ''}</span>`;
             }
 
             html += `</div>`;
@@ -3773,10 +3772,10 @@ function displayEIP712Decoded(decoded) {
         html += `<div class="info-row" >
             <div class="info-label">Message Type</div>
             <div class="info-value">
-                <strong>Primary Type:</strong> ${decoded.primaryType}<br>
-                <strong>Domain:</strong> ${decoded.domain.name || 'N/A'}<br>
-                <strong>Chain ID:</strong> ${decoded.domain.chainId || 'N/A'}<br>
-                <strong>Verifying Contract:</strong> ${decoded.domain.verifyingContract || 'N/A'}
+                <strong>Primary Type:</strong> ${escapeHtml(decoded.primaryType)}<br>
+                <strong>Domain:</strong> ${escapeHtml(decoded.domain.name || 'N/A')}<br>
+                <strong>Chain ID:</strong> ${escapeHtml(decoded.domain.chainId || 'N/A')}<br>
+                <strong>Verifying Contract:</strong> ${escapeHtml(decoded.domain.verifyingContract || 'N/A')}
             </div>
         </div>`;
     }
@@ -3837,7 +3836,7 @@ function displayEIP712Decoded(decoded) {
         html += `<div class="info-row">
             <div class="info-label">⚠️ Missing Information</div>
             <div class="info-value" style="color: #856404;">
-                ${decoded.note || 'This is ABI-encoded typed message data.'}<br><br>
+                ${escapeHtml(decoded.note || 'This is ABI-encoded typed message data.')}<br><br>
                 <strong>To compute the complete EIP-712 signature hash, the following are needed:</strong><br>
                 • Domain Separator (requires domain configuration: chain ID, verifying contract)<br>
                 • EIP-712 Signature Hash (requires: keccak256("\\x19\\x01" + domainSeparator + structHash))<br><br>
@@ -3855,15 +3854,15 @@ function displayEIP712Decoded(decoded) {
         decoded.interpretations.forEach((param, index) => {
             html += `<div class="param-item">
                 <strong>Parameter ${index}</strong><br>
-                <span style="color: #666; font-size: 0.85em;">Raw: ${param.raw}</span><br><br>`;
+                <span style="color: #666; font-size: 0.85em;">Raw: ${escapeHtml(param.raw)}</span><br><br>`;
 
             param.possibleTypes.forEach(type => {
                 if (type.type === 'address') {
-                    html += `<span style="color: #dc0d17;">📍 Address:</span> ${type.value}<br>`;
+                    html += `<span style="color: #dc0d17;">📍 Address:</span> ${escapeHtml(type.value)}<br>`;
                 } else if (type.type === 'uint256') {
-                    html += `<span style="color: #666;">🔢 Uint256:</span> ${type.value}<br>`;
+                    html += `<span style="color: #666;">🔢 Uint256:</span> ${escapeHtml(type.value)}<br>`;
                 } else if (type.type === 'bytes32') {
-                    html += `<span style="color: #666;">📦 Bytes32/Hash:</span> ${type.value.slice(0, 20)}...<br>`;
+                    html += `<span style="color: #666;">📦 Bytes32/Hash:</span> ${escapeHtml(type.value.slice(0, 20))}...<br>`;
                 }
             });
 
@@ -3904,7 +3903,7 @@ function displayManualDecoded(decoded) {
     // Show proxy warning if present
     if (decoded.proxyWarning) {
         html += `<div class="error-message" style = "margin-bottom: 20px;" >
-            ${decoded.proxyWarning}
+            ${escapeHtml(decoded.proxyWarning)}
                  </div> `;
     }
 
@@ -3929,17 +3928,17 @@ function displayManualDecoded(decoded) {
     html += `<div class="info-row" >
         <div class="info-label">Best-effort Assessment</div>
         <div class="info-value">
-            <strong style="color: #dc0d17;">Likely Function:</strong> ${assessment.likelyFunction}<br>
-            <strong>Confidence:</strong> ${assessment.confidence}<br><br>
+            <strong style="color: #dc0d17;">Likely Function:</strong> ${escapeHtml(assessment.likelyFunction)}<br>
+            <strong>Confidence:</strong> ${escapeHtml(assessment.confidence)}<br><br>
             <strong>Description:</strong><br>
-            ${assessment.description}
-            ${assessment.hint ? `<div class="small-text" style="margin-top: 8px;">${assessment.hint}</div>` : ''}
+            ${escapeHtml(assessment.description)}
+            ${assessment.hint ? `<div class="small-text" style="margin-top: 8px;">${escapeHtml(assessment.hint)}</div>` : ''}
         </div>
     </div>`;
 
     html += `<div class="info-row">
         <div class="info-label">Function Selector</div>
-        <div class="info-value">${decoded.selector}</div>
+        <div class="info-value">${escapeHtml(decoded.selector)}</div>
     </div>`;
 
     if (assessment.parameters.length > 0) {
@@ -3949,15 +3948,15 @@ function displayManualDecoded(decoded) {
 
         assessment.parameters.forEach((param) => {
             html += `<div class="param-item">
-                <strong>${param.name}</strong> (${param.type})<br>
-                <span style="color: #666; font-size: 0.9em;">${param.description}</span><br>`;
+                <strong>${escapeHtml(param.name)}</strong> (${escapeHtml(param.type)})<br>
+                <span style="color: #666; font-size: 0.9em;">${escapeHtml(param.description)}</span><br>`;
 
             if (param.formatted) {
-                html += `<span class="formatted-value">${param.formatted}</span><br>`;
+                html += `<span class="formatted-value">${escapeHtml(param.formatted)}</span><br>`;
             }
 
             const ledgerHint = formatValueForLedger(param.value);
-            html += `<br><span style="color: #999; font-size: 0.85em;">Raw: ${param.value}${ledgerHint ? ` <br>(Ledger: ${ledgerHint})` : ''}</span>
+            html += `<br><span style="color: #999; font-size: 0.85em;">Raw: ${escapeHtml(param.value)}${ledgerHint ? ` <br>(Ledger: ${escapeHtml(ledgerHint)})` : ''}</span>
             </div>`;
         });
 

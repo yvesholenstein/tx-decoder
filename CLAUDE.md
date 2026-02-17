@@ -48,7 +48,7 @@ All three decoders follow the same file separation pattern:
 ## Key Technical Details
 
 - **ethers.js versions differ**: EVM Decoder uses v5.7.2; EIP-712 encoder uses v6.7.1. APIs are incompatible between versions.
-- **Babylon Decoder shares CSS**: Its `index.html` references `../Multi EVM Version/styles.css` as a base stylesheet — this relative path is important.
+- **Babylon Decoder shares CSS**: Its `index.html` references `../Multi EVM Decoder/styles.css` as a base stylesheet — this relative path is important.
 - **EVM API key**: Stored in `localStorage` under `etherscanApiKey`. Single Etherscan v2 unified endpoint (`api.etherscan.io/v2/api`) works for all 14 chains.
 - **EVM Decoder entry points**: `decodeAuto()` (API-based ABI lookup) and `decodeManual()` (user-pasted ABI) in `decoder.js`.
 - **All state is in localStorage**: API keys, settings, dark mode preference, address book, finality providers.

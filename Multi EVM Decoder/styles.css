@@ -496,8 +496,8 @@ body.dark-mode .helper-text {
     color: #004085;
 }
 .status-banner.warning {
-    background: rgba(255, 193, 7, 0.2);
-    border-color: rgba(255, 193, 7, 0.6);
+    background: rgba(255, 193, 7, 0.12);
+    border-color: rgba(255, 193, 7, 0.3);
     color: #856404;
 }
 
@@ -505,12 +505,6 @@ body.dark-mode .helper-text {
     background: rgba(40, 167, 69, 0.12);
     border-color: rgba(40, 167, 69, 0.3);
     color: #155724;
-}
-
-.status-banner.warning {
-    background: rgba(255, 193, 7, 0.12);
-    border-color: rgba(255, 193, 7, 0.3);
-    color: #856404;
 }
 
 .status-banner.error {

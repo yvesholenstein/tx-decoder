@@ -154,7 +154,7 @@
                 </div>
                 <div class="output-box" id="typeHash"></div>
                 <div class="explanation">This is keccak256 of the type definition string</div>
-                <button class="copy-btn" onclick="copyToClipboard('typeHash')">Copy</button>
+                <button class="copy-btn" onclick="copyToClipboard(event,'typeHash')">Copy</button>
             </div>
 
             <div class="section">
@@ -164,7 +164,7 @@
                 </div>
                 <div class="output-box" id="encodedMessage"></div>
                 <div class="explanation">This is the ABI-encoded representation of your order - still decodable!</div>
-                <button class="copy-btn" onclick="copyToClipboard('encodedMessage')">Copy ABI-Encoded Data</button>
+                <button class="copy-btn" onclick="copyToClipboard(event,'encodedMessage')">Copy ABI-Encoded Data</button>
             </div>
 
             <div class="section">
@@ -174,7 +174,7 @@
                 </div>
                 <div class="output-box" id="structHash"></div>
                 <div class="explanation">keccak256(typeHash + encodedMessage)</div>
-                <button class="copy-btn" onclick="copyToClipboard('structHash')">Copy</button>
+                <button class="copy-btn" onclick="copyToClipboard(event,'structHash')">Copy</button>
             </div>
 
             <div class="section">
@@ -184,7 +184,7 @@
                 </div>
                 <div class="output-box" id="domainHash"></div>
                 <div class="explanation">Hash of the domain (chain, contract, etc.)</div>
-                <button class="copy-btn" onclick="copyToClipboard('domainHash')">Copy</button>
+                <button class="copy-btn" onclick="copyToClipboard(event,'domainHash')">Copy</button>
             </div>
 
             <div class="section" style="border: 2px solid #28a745;">
@@ -194,7 +194,7 @@
                 </div>
                 <div class="output-box" id="finalHash"></div>
                 <div class="explanation">keccak256("\x19\x01" + domainSeparator + structHash) - This is what gets signed</div>
-                <button class="copy-btn" onclick="copyToClipboard('finalHash')">Copy Final Hash</button>
+                <button class="copy-btn" onclick="copyToClipboard(event,'finalHash')">Copy Final Hash</button>
             </div>
         </div>
 
@@ -305,10 +305,11 @@
             }
         }
 
-        function copyToClipboard(elementId) {
+        function copyToClipboard(evt, elementId) {
             const text = document.getElementById(elementId).textContent;
             navigator.clipboard.writeText(text).then(() => {
-                const btn = event.target;
+                const btn = evt && evt.target ? evt.target : null;
+                if (!btn) return;
                 const originalText = btn.textContent;
                 btn.textContent = 'Copied!';
                 setTimeout(() => {

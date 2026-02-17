@@ -1,3 +1,14 @@
+// HTML escaping utility to prevent XSS via innerHTML
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Load saved settings and API key
 function loadApiKey() {
     const savedKey = localStorage.getItem('etherscanApiKey');
@@ -120,7 +131,7 @@ function updateApiKeyWarning() {
 
 // Show error message
 function showError(message) {
-    const html = `<div class="error-message">${message}</div>`;
+    const html = `<div class="error-message">${escapeHtml(message)}</div>`;
     document.getElementById('output-content').innerHTML = html;
     showOutput();
 }
@@ -184,10 +195,10 @@ function renderAddressBook() {
     list.innerHTML = entries.map(([addr, data]) => `
     <div class="address-book-entry">
         <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:10px;">
-            <strong>${data.label}</strong><br>
-            <span style="font-size:0.8em; color:#888;">${addr}</span>
+            <strong>${escapeHtml(data.label)}</strong><br>
+            <span style="font-size:0.8em; color:#888;">${escapeHtml(addr)}</span>
         </div>
-        <button class="remove-btn" onclick="handleRemoveAddress('${addr}')">Ç-</button>
+        <button class="remove-btn" onclick="handleRemoveAddress('${escapeHtml(addr)}')">Ç-</button>
     </div>
 `).join('');
 }
