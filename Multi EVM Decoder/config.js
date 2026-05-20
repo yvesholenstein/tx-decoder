@@ -286,8 +286,14 @@ const KNOWN_CONTRACTS = {
         '0x10ed43c718714eb63d5aa57b78b54704e256024e': { name: 'PancakeSwap V2 Router', category: 'dex/router', source: 'builtin' }
     },
     hyperevm: {
-        '0x5991a2df15a8f6a256d3ec51e99254cd3fb576a9': { name: 'Kinetiq StakingManager', category: 'liquid-staking', source: 'builtin' },
+        '0x393d0b87ed38fc779fd9611144ae649ba6082109': { name: 'Kinetiq StakingManager (kHYPE)', category: 'liquid-staking', source: 'builtin' },
         '0xfd739d4e423301ce9385c1fb8850539d657c296d': { name: 'Kinetiq kHYPE Token', category: 'token', source: 'builtin' },
+        '0xac03caba51e17c86c921e1f6cbfbdc91f8bb2e6b': { name: 'Kinetiq PauserRegistry (kHYPE)', category: 'liquid-staking', source: 'builtin' },
+        '0x4b797a93dfc3d18cf98b7322a2b142fa8007508f': { name: 'Kinetiq ValidatorManager (kHYPE)', category: 'liquid-staking', source: 'builtin' },
+        '0x9209648ec9d448ef57116b73a2f081835643dc7a': { name: 'Kinetiq StakingAccountant (kHYPE)', category: 'liquid-staking', source: 'builtin' },
+        '0x192826e470bd65fdc2cb472edd834d096233049b': { name: 'Kinetiq OracleManager (kHYPE)', category: 'liquid-staking', source: 'builtin' },
+        '0xefbccc6e33da1c1ef638cbc0f044968d0f590fed': { name: 'Kinetiq DefaultOracle/OracleAdapter (kHYPE)', category: 'liquid-staking', source: 'builtin' },
+        '0x23a4604cdfe8e9e2e9cf7c10d7492b0f3f4b4038': { name: 'Kinetiq Operator (kHYPE)', category: 'liquid-staking', source: 'builtin' },
         '0x5555555555555555555555555555555555555555': { name: 'Wrapped HYPE (WHYPE)', category: 'token', source: 'builtin' }
     }
 };

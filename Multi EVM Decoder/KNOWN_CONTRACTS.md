@@ -44,6 +44,15 @@ Format: `chain | address | name | category | source`
 - base | 0x5c9d6f1b17a0cee870c39e0c99bfec23e86e9be5 | Base Canonical Bridge (Portal) | bridge | chain-docs
 - bsc | 0x1111111254760f7ab3f16433eea9304126dcf199 | 1inch Aggregation Router v5 (BSC) | dex/router | etherscan
 - bsc | 0x10ed43c718714eb63d5aa57b78b54704e256024e | PancakeSwap V2 Router | dex/router | etherscan
+- hyperevm | 0x393d0b87ed38fc779fd9611144ae649ba6082109 | Kinetiq StakingManager (kHYPE) | liquid-staking | chain-docs
+- hyperevm | 0xfd739d4e423301ce9385c1fb8850539d657c296d | Kinetiq kHYPE Token | token | chain-docs
+- hyperevm | 0xac03caba51e17c86c921e1f6cbfbdc91f8bb2e6b | Kinetiq PauserRegistry (kHYPE) | liquid-staking | chain-docs
+- hyperevm | 0x4b797a93dfc3d18cf98b7322a2b142fa8007508f | Kinetiq ValidatorManager (kHYPE) | liquid-staking | chain-docs
+- hyperevm | 0x9209648ec9d448ef57116b73a2f081835643dc7a | Kinetiq StakingAccountant (kHYPE) | liquid-staking | chain-docs
+- hyperevm | 0x192826e470bd65fdc2cb472edd834d096233049b | Kinetiq OracleManager (kHYPE) | liquid-staking | chain-docs
+- hyperevm | 0xefbccc6e33da1c1ef638cbc0f044968d0f590fed | Kinetiq DefaultOracle/OracleAdapter (kHYPE) | liquid-staking | chain-docs
+- hyperevm | 0x23a4604cdfe8e9e2e9cf7c10d7492b0f3f4b4038 | Kinetiq Operator (kHYPE) | liquid-staking | chain-docs
+- hyperevm | 0x5555555555555555555555555555555555555555 | Wrapped HYPE (WHYPE) | token | chain-docs
 
 ### Canonical bridges (chain docs / chainlist)
 - ethereum | 0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f | Arbitrum Delayed Inbox (L1 forwarder) | bridge | chain-docs
