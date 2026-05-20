@@ -39,7 +39,7 @@ const CHAIN_CONFIG = {
     hyperevm: {
         name: 'HyperEVM',
         chainId: 999,
-        explorerUrl: 'https://purrsec.com/',
+        explorerUrl: 'https://hyperevmscan.io',
         rpcUrl: 'https://rpc.hyperliquid.xyz/evm',
         proxyApiUrl: null,
         nativeCurrency: { symbol: 'HYPE', decimals: 18 }
@@ -158,7 +158,9 @@ const TOKEN_DATABASE = {
     },
     hyperevm: {
         '0x0000000000000000000000000000000000000000': { symbol: 'HYPE', decimals: 18 },
-        '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee': { symbol: 'HYPE', decimals: 18 }
+        '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee': { symbol: 'HYPE', decimals: 18 },
+        '0x5555555555555555555555555555555555555555': { symbol: 'WHYPE', decimals: 18 },
+        '0xfd739d4e423301ce9385c1fb8850539d657c296d': { symbol: 'kHYPE', decimals: 18 }
     },
     energywebchain: {
         '0x0000000000000000000000000000000000000000': { symbol: 'EWT', decimals: 18 },
@@ -282,6 +284,11 @@ const KNOWN_CONTRACTS = {
     bsc: {
         '0x1111111254760f7ab3f16433eea9304126dcf199': { name: '1inch Aggregation Router v5 (BSC)', category: 'dex/router', source: 'builtin' },
         '0x10ed43c718714eb63d5aa57b78b54704e256024e': { name: 'PancakeSwap V2 Router', category: 'dex/router', source: 'builtin' }
+    },
+    hyperevm: {
+        '0x5991a2df15a8f6a256d3ec51e99254cd3fb576a9': { name: 'Kinetiq StakingManager', category: 'liquid-staking', source: 'builtin' },
+        '0xfd739d4e423301ce9385c1fb8850539d657c296d': { name: 'Kinetiq kHYPE Token', category: 'token', source: 'builtin' },
+        '0x5555555555555555555555555555555555555555': { name: 'Wrapped HYPE (WHYPE)', category: 'token', source: 'builtin' }
     }
 };
 
@@ -614,6 +621,12 @@ const COMMON_ABIS = {
         { "inputs": [{ "internalType": "address", "name": "asset", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "address", "name": "to", "type": "address" }], "name": "withdraw", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" },
         { "inputs": [{ "internalType": "address", "name": "asset", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "interestRateMode", "type": "uint256" }, { "internalType": "uint16", "name": "referralCode", "type": "uint16" }, { "internalType": "address", "name": "onBehalfOf", "type": "address" }], "name": "borrow", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
         { "inputs": [{ "internalType": "address", "name": "asset", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "rateMode", "type": "uint256" }, { "internalType": "address", "name": "onBehalfOf", "type": "address" }], "name": "repay", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "nonpayable", "type": "function" }
+    ],
+    'KinetiqStakingManager': [
+        { "inputs": [], "name": "stake", "outputs": [], "stateMutability": "payable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "kHYPEAmount", "type": "uint256" }], "name": "queueWithdrawal", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256", "name": "withdrawalId", "type": "uint256" }], "name": "confirmWithdrawal", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [{ "internalType": "uint256[]", "name": "withdrawalIds", "type": "uint256[]" }], "name": "batchConfirmWithdrawals", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
     ]
 };
 
